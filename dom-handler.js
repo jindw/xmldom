@@ -1,20 +1,12 @@
-/* Private static helper function */
-if(typeof require == 'function'){
-	var DOMImplementation = require('./dom').DOMImplementation;
-}
-
-var impl = new DOMImplementation();
-
-/* Private static helpers treated below as private instance methods, so don't need to add these to the public API; we might use a Relator to also get rid of non-standard public properties */
-function appendElement (hander,node) {
-    if (!hander.currentElement) {
-        hander.document.appendChild(node);
-    } else {
-        hander.currentElement.appendChild(node);
-    }
-}
 /**
  * 
+ * 
+ * +ContentHandler+ErrorHandler
+ * +LexicalHandler+EntityResolver2
+ * -DeclHandler-DTDHandler 
+ * 
+ * DefaultHandler:EntityResolver, DTDHandler, ContentHandler, ErrorHandler
+ * DefaultHandler2:DefaultHandler,LexicalHandler, DeclHandler, EntityResolver2
  * @link http://www.saxproject.org/apidoc/org/xml/sax/helpers/DefaultHandler.html
  */
 function DOMHandler() {
@@ -26,138 +18,178 @@ function DOMHandler() {
  * @see org.xml.sax.ContentHandler#startDocument
  * @link http://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html
  */ 
-DOMHandler.prototype.startDocument = function() {
-    this.document = impl.createDocument(null, null, null);
-    if (this.locator) {
-        this.document.documentURI = this.locator.getSystemId();
-    }
-};
-DOMHandler.prototype.startElement = function(namespaceURI, localName, qName, attrs) {
-	var doc = this.document;
-    var el = doc.createElementNS(namespaceURI, qName||localName);
-    appendElement(this, element);
-    this.currentElement = element;
-    for (var i = 0 ; i < attrs.length; i++) {
-        var namespaceURI = attrs.getURI(i);
-        var value = attrs.getValue(i);
-        if (namespaceURI == null) { // namespaceURI should be null
-            var localName = attrs.getLocalName(i);
-            this.currentElement.setAttribute(localName, value);
-        } else {
-            var qName = attrs.getQName(i) || attrs.getLocalName(i);
-            this.currentElement.setAttributeNS(namespaceURI, qName, value);
-        }
-    }
-    if (this.currentElement.setAttributeNodeNS) {
-        //for (var prefix in this.currentAttNodes) {
-        this.currentElement.setAttributeNodeNS(this.currentAttNodes[prefix]);
-        //}
-        this.currentAttNodes = {};
-    }
-};
-DOMHandler.prototype.endElement = function(namespaceURI, localName, qName) {
-    this.currentElement = this.currentElement.parentNode;
-};
-/**
- * before startElement all startPrefixMapping events will occur immediately before the corresponding startElement event
- * @see org.xml.sax.ContentHandler#startDocument
- * @linkhttp://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html#startPrefixMapping%28java.lang.String,%20java.lang.String%29
+DOMHandler.prototype = {
+	startDocument : function() {
+    	this.document = new DOMImplementation().createDocument(null, null, null);
+    	if (this.locator) {
+        	this.document.documentURI = this.locator.getSystemId();
+    	}
+	},
+	startElement:function(namespaceURI, localName, qName, attrs) {
+		var doc = this.document;
+	    var el = doc.createElementNS(namespaceURI, qName||localName);
+	    appendElement(this, el);
+	    this.currentElement = el;
+	    for (var i = 0 ; i < attrs.length; i++) {
+	        var namespaceURI = attrs.getURI(i);
+	        var value = attrs.getValue(i);
+	        if (namespaceURI == null) { // namespaceURI should be null
+	            var localName = attrs.getLocalName(i);
+	            this.currentElement.setAttribute(localName, value);
+	        } else {
+	            var qName = attrs.getQName(i) || attrs.getLocalName(i);
+	            this.currentElement.setAttributeNS(namespaceURI, qName, value);
+	        }
+	    }
+	    if (this.currentElement.setAttributeNodeNS) {
+	        //for (var prefix in this.currentAttNodes) {
+	        //this.currentElement.setAttributeNodeNS(this.currentAttNodes[prefix]);
+	        //}
+	        this.currentAttNodes = {};
+	    }
+	},
+	endElement:function(namespaceURI, localName, qName) {
+	    this.currentElement = this.currentElement.parentNode;
+	},
+	/**
+	 * before startElement all startPrefixMapping events will occur immediately before the corresponding startElement event
+	 * @see org.xml.sax.ContentHandler#startDocument
+	 * @linkhttp://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html#startPrefixMapping%28java.lang.String,%20java.lang.String%29
+	 */
+	startPrefixMapping:function(prefix, uri) {
+	//    /* not supported by all browsers*/
+	//    if (this.document.createAttributeNS) {
+	//        // We need to store the declaration for later addition to the element, since the
+	//        //   element is not yet available
+	//        var qName = prefix ? "xmlns:" + prefix : "xmlns";
+	//        var attr = this.document.createAttributeNS("http://www.w3.org/2000/xmlns/", qName);
+	//        attr.nodeValue = uri;
+	//        if (!prefix) {
+	//            prefix = ':'; // Put some unique value as our key which a prefix cannot use
+	//        }
+	//        this.currentAttNodes[prefix] = attr;
+	//    }
+	},
+	endPrefixMapping:function(prefix) {
+	},
+	processingInstruction:function(target, data) {
+	    var ins = this.document.createProcessingInstruction(target, data);
+	    appendElement(this, ins);
+	},
+	ignorableWhitespace:function(ch, start, length) {
+	},
+	characters:function(chars, start, length) {
+		chars = _toString.apply(this,arguments)
+	    if (this.cdata) {
+	        var cdataNode = this.document.createCDATASection(chars);
+	        this.currentElement.appendChild(cdataNode);
+	    } else {
+	        var textNode = this.document.createTextNode(chars);
+	        this.currentElement.appendChild(textNode);
+	    }
+	},
+	skippedEntity:function(name) {
+	},
+	endDocument:function() {
+		var doc = this.document;
+		var cs = new java.lang.String("123p7568790-9").toCharArray();
+		print(doc.cloneNode(true))
+	},
+	setDocumentLocator:function (locator) {
+	    this.locator = locator;
+	},
+	//LexicalHandler
+	comment:function(chars, start, length) {
+		chars = _toString.apply(this,arguments)
+	    var comment = this.document.createComment(chars);
+	    appendElement(this, comment);
+	},
+	
+	startCDATA:function() {
+	    //used in characters() methods
+	    this.cdata = true;
+	},
+	endCDATA:function() {
+	    //used in characters() methods
+	    this.cdata = false;
+	},
+	
+	startDTD:function(name, publicId, systemId) {
+		var impl = this.document.implementation;
+	    if (impl && impl.createDocumentType) {
+	        var dt = impl.createDocumentType(name, publicId, systemId);
+	        appendElement(this, dt);
+	    }
+	},
+	/**
+	 * @see org.xml.sax.ErrorHandler
+	 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
+	 */
+	warning:function(error) {
+	    this.saxExceptions.push(error);
+	},
+	error:function(error) {
+	    this.saxExceptions.push(error);
+	},
+	fatalError:function(error) {
+		print(error);
+	    throw error;
+	}
+}
+
+function _toString(chars,start,length){
+	if(typeof chars != 'string' && !(chars instanceof String)){
+		//print('@@@@@\n',chars.length >= start+length);
+		if(chars.length >= start+length){
+			return new java.lang.String(chars,start,length)+'';
+		}
+	}
+	return chars;
+}
+
+/*
+ * @link http://www.saxproject.org/apidoc/org/xml/sax/ext/LexicalHandler.html
+ * used method of org.xml.sax.ext.LexicalHandler:
+ *  #comment(chars, start, length)
+ *  #startCDATA()
+ *  #endCDATA()
+ *  #startDTD(name, publicId, systemId)
+ *
+ *
+ * IGNORED method of org.xml.sax.ext.LexicalHandler:
+ *  #endDTD()
+ *  #startEntity(name)
+ *  #endEntity(name)
+ *
+ *
+ * @link http://www.saxproject.org/apidoc/org/xml/sax/ext/DeclHandler.html
+ * IGNORED method of org.xml.sax.ext.DeclHandler
+ * 	#attributeDecl(eName, aName, type, mode, value)
+ *  #elementDecl(name, model)
+ *  #externalEntityDecl(name, publicId, systemId)
+ *  #internalEntityDecl(name, value)
+ * @link http://www.saxproject.org/apidoc/org/xml/sax/ext/EntityResolver2.html
+ * IGNORED method of org.xml.sax.EntityResolver2
+ *  #resolveEntity(String name,String publicId,String baseURI,String systemId)
+ *  #resolveEntity(publicId, systemId)
+ *  #getExternalSubset(name, baseURI)
+ * @link http://www.saxproject.org/apidoc/org/xml/sax/DTDHandler.html
+ * IGNORED method of org.xml.sax.DTDHandler
+ *  #notationDecl(name, publicId, systemId) {};
+ *  #unparsedEntityDecl(name, publicId, systemId, notationName) {};
  */
-DOMHandler.prototype.startPrefixMapping = function(prefix, uri) {
-//    /* not supported by all browsers*/
-//    if (this.document.createAttributeNS) {
-//        // We need to store the declaration for later addition to the element, since the
-//        //   element is not yet available
-//        var qName = prefix ? "xmlns:" + prefix : "xmlns";
-//        var attr = this.document.createAttributeNS("http://www.w3.org/2000/xmlns/", qName);
-//        attr.nodeValue = uri;
-//        if (!prefix) {
-//            prefix = ':'; // Put some unique value as our key which a prefix cannot use
-//        }
-//        this.currentAttNodes[prefix] = attr;
-//    }
-};
-DOMHandler.prototype.endPrefixMapping = function(prefix) {
-};
-DOMHandler.prototype.processingInstruction = function(target, data) {
-    var ins = this.document.createProcessingInstruction(target, data);
-    appendElement(this, ins);
-};
-DOMHandler.prototype.ignorableWhitespace = function(ch, start, length) {
-};
-DOMHandler.prototype.characters = function(ch, start, length) {
-    if (this.cdata) {
-        var cdataNode = this.document.createCDATASection(ch);
-        this.currentElement.appendChild(cdataNode);
+"endDTD,startEntity,endEntity,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,resolveEntity,getExternalSubset,notationDecl,unparsedEntityDecl".replace(/\w+/g,function(key){
+	DOMHandler.prototype[key] = function(){return null}
+})
+if(typeof require == 'function'){
+	var DOMImplementation = require('./dom').DOMImplementation;
+}
+
+/* Private static helpers treated below as private instance methods, so don't need to add these to the public API; we might use a Relator to also get rid of non-standard public properties */
+function appendElement (hander,node) {
+    if (!hander.currentElement) {
+        hander.document.appendChild(node);
     } else {
-        var textNode = this.document.createTextNode(ch);
-        this.currentElement.appendChild(textNode);
+        hander.currentElement.appendChild(node);
     }
-};
-DOMHandler.prototype.skippedEntity = function(name) {
-};
-DOMHandler.prototype.endDocument = function() {
-};
-DOMHandler.prototype.setDocumentLocator = function (locator) {
-    this.locator = locator;
-};
-
-
-// INTERFACE: DeclHandler: http://www.saxproject.org/apidoc/org/xml/sax/ext/DeclHandler.html
-DOMHandler.prototype.attributeDecl = function(eName, aName, type, mode, value) {};
-DOMHandler.prototype.elementDecl = function(name, model) {};
-DOMHandler.prototype.externalEntityDecl = function(name, publicId, systemId) {};
-DOMHandler.prototype.internalEntityDecl = function(name, value) {};
-
-
-
-// INTERFACE: LexicalHandler: http://www.saxproject.org/apidoc/org/xml/sax/ext/LexicalHandler.html
-DOMHandler.prototype.comment = function(ch, start, length) {
-    var comment = this.document.createComment(ch);
-    appendElement(this, comment);
-};
-
-DOMHandler.prototype.startCDATA = function() {
-    //used in characters() methods
-    this.cdata = true;
-};
-DOMHandler.prototype.endCDATA = function() {
-    //used in characters() methods
-    this.cdata = false;
-};
-
-DOMHandler.prototype.startDTD = function(name, publicId, systemId) {
-    if (document.implementation && document.implementation.createDocumentType) {
-        var dt = document.implementation.createDocumentType(name, publicId, systemId);
-        appendElement(this, dt);
-    }
-};
-DOMHandler.prototype.endDTD = function() {};
-DOMHandler.prototype.startEntity = function(name) {};
-DOMHandler.prototype.endEntity = function(name) {};
-
-
-
-// INTERFACE: EntityResolver: http://www.saxproject.org/apidoc/org/xml/sax/EntityResolver.html
-// Could implement this by checking for last two arguments missing in EntityResolver2 resolveEntity() below
-// DOMHandler.prototype.resolveEntity(publicId, systemId) {};
-// INTERFACE: EntityResolver2: http://www.saxproject.org/apidoc/org/xml/sax/ext/EntityResolver2.html
-DOMHandler.prototype.resolveEntity = function(name, publicId, baseURI, systemId) {};
-DOMHandler.prototype.getExternalSubset = function(name, baseURI) {};
-
-// INTERFACE: DTDHandler: http://www.saxproject.org/apidoc/org/xml/sax/DTDHandler.html
-DOMHandler.prototype.notationDecl = function (name, publicId, systemId) {};
-DOMHandler.prototype.unparsedEntityDecl = function (name, publicId, systemId, notationName) {};
-
-
-// INTERFACE: ErrorHandler: http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
-DOMHandler.prototype.warning = function(error) {
-    this.saxExceptions.push(error);
-};
-DOMHandler.prototype.error = function(error) {
-    this.saxExceptions.push(error);
-};
-DOMHandler.prototype.fatalError = function(error) {
-    throw saxParseException;
-};
-
+}

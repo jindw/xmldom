@@ -1,6 +1,16 @@
+function DOMParser(){
+	
+}
+DOMParser.prototype.parseFromString = function(source){
+	var sax =  new XMLReader();
+	var handler = new DOMHandler();
+	sax.contentHandler = handler;
+	sax.lexicalHandler = handler;
+	sax.errorHandler = handler;
+	sax.parse(source);
+	return handler.document;
+}
 /**
- * 
- * 
  * +ContentHandler+ErrorHandler
  * +LexicalHandler+EntityResolver2
  * -DeclHandler-DTDHandler 
@@ -28,47 +38,20 @@ DOMHandler.prototype = {
 	startElement:function(namespaceURI, localName, qName, attrs) {
 		var doc = this.document;
 	    var el = doc.createElementNS(namespaceURI, qName||localName);
+	    var len = attrs.length;
 	    appendElement(this, el);
 	    this.currentElement = el;
-	    for (var i = 0 ; i < attrs.length; i++) {
+	    for (var i = 0 ; i < len; i++) {
 	        var namespaceURI = attrs.getURI(i);
 	        var value = attrs.getValue(i);
-	        if (namespaceURI == null) { // namespaceURI should be null
-	            var localName = attrs.getLocalName(i);
-	            this.currentElement.setAttribute(localName, value);
-	        } else {
-	            var qName = attrs.getQName(i) || attrs.getLocalName(i);
-	            this.currentElement.setAttributeNS(namespaceURI, qName, value);
-	        }
-	    }
-	    if (this.currentElement.setAttributeNodeNS) {
-	        //for (var prefix in this.currentAttNodes) {
-	        //this.currentElement.setAttributeNodeNS(this.currentAttNodes[prefix]);
-	        //}
-	        this.currentAttNodes = {};
+	        var qName = attrs.getQName(i);
+	        this.currentElement.setAttributeNS(namespaceURI, qName, value);
 	    }
 	},
 	endElement:function(namespaceURI, localName, qName) {
 	    this.currentElement = this.currentElement.parentNode;
 	},
-	/**
-	 * before startElement all startPrefixMapping events will occur immediately before the corresponding startElement event
-	 * @see org.xml.sax.ContentHandler#startDocument
-	 * @linkhttp://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html#startPrefixMapping%28java.lang.String,%20java.lang.String%29
-	 */
 	startPrefixMapping:function(prefix, uri) {
-	//    /* not supported by all browsers*/
-	//    if (this.document.createAttributeNS) {
-	//        // We need to store the declaration for later addition to the element, since the
-	//        //   element is not yet available
-	//        var qName = prefix ? "xmlns:" + prefix : "xmlns";
-	//        var attr = this.document.createAttributeNS("http://www.w3.org/2000/xmlns/", qName);
-	//        attr.nodeValue = uri;
-	//        if (!prefix) {
-	//            prefix = ':'; // Put some unique value as our key which a prefix cannot use
-	//        }
-	//        this.currentAttNodes[prefix] = attr;
-	//    }
 	},
 	endPrefixMapping:function(prefix) {
 	},
@@ -80,20 +63,19 @@ DOMHandler.prototype = {
 	},
 	characters:function(chars, start, length) {
 		chars = _toString.apply(this,arguments)
-	    if (this.cdata) {
-	        var cdataNode = this.document.createCDATASection(chars);
-	        this.currentElement.appendChild(cdataNode);
-	    } else {
-	        var textNode = this.document.createTextNode(chars);
-	        this.currentElement.appendChild(textNode);
-	    }
+		if(this.currentElement && chars){
+			if (this.cdata) {
+				var cdataNode = this.document.createCDATASection(chars);
+				this.currentElement.appendChild(cdataNode);
+			} else {
+				var textNode = this.document.createTextNode(chars);
+				this.currentElement.appendChild(textNode);
+			}
+		}
 	},
 	skippedEntity:function(name) {
 	},
 	endDocument:function() {
-		var doc = this.document;
-		var cs = new java.lang.String("123p7568790-9").toCharArray();
-		print(doc.cloneNode(true))
 	},
 	setDocumentLocator:function (locator) {
 	    this.locator = locator;
@@ -110,7 +92,6 @@ DOMHandler.prototype = {
 	    this.cdata = true;
 	},
 	endCDATA:function() {
-	    //used in characters() methods
 	    this.cdata = false;
 	},
 	
@@ -132,7 +113,7 @@ DOMHandler.prototype = {
 	    this.saxExceptions.push(error);
 	},
 	fatalError:function(error) {
-		print(error);
+		console.error(error);
 	    throw error;
 	}
 }
@@ -143,8 +124,10 @@ function _toString(chars,start,length){
 		if(chars.length >= start+length){
 			return new java.lang.String(chars,start,length)+'';
 		}
+		return chars;
+	}else{
+		return chars.substr(start,length)
 	}
-	return chars;
 }
 
 /*
@@ -181,9 +164,6 @@ function _toString(chars,start,length){
 "endDTD,startEntity,endEntity,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,resolveEntity,getExternalSubset,notationDecl,unparsedEntityDecl".replace(/\w+/g,function(key){
 	DOMHandler.prototype[key] = function(){return null}
 })
-if(typeof require == 'function'){
-	var DOMImplementation = require('./dom').DOMImplementation;
-}
 
 /* Private static helpers treated below as private instance methods, so don't need to add these to the public API; we might use a Relator to also get rid of non-standard public properties */
 function appendElement (hander,node) {
@@ -192,4 +172,10 @@ function appendElement (hander,node) {
     } else {
         hander.currentElement.appendChild(node);
     }
+}
+
+if(typeof require == 'function'){
+	var DOMImplementation = require('./dom').DOMImplementation;
+	var XMLReader = require('./sax').XMLReader;
+	exports.DOMParser = DOMParser;
 }

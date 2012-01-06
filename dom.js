@@ -1,5 +1,5 @@
 /*
- * DOM Level 1
+ * DOM Level 2
  * Object DOMException
  * @see http://www.w3.org/TR/REC-DOM-Level-1/ecma-script-language-binding.html
  * @see http://www.w3.org/TR/2000/REC-DOM-Level-2-Core-20001113/ecma-script-binding.html
@@ -36,18 +36,18 @@ function _extends(Class,Super){
 }
 // Node Types
 var NodeType = {}
-var ELEMENT_NODE                = NodeType[ELEMENT_NODE]                = 1;
-var ATTRIBUTE_NODE              = NodeType[ATTRIBUTE_NODE]              = 2;
-var TEXT_NODE                   = NodeType[TEXT_NODE]                   = 3;
-var CDATA_SECTION_NODE          = NodeType[CDATA_SECTION_NODE]          = 4;
-var ENTITY_REFERENCE_NODE       = NodeType[ENTITY_REFERENCE_NODE]       = 5;
-var ENTITY_NODE                 = NodeType[ENTITY_NODE]                 = 6;
-var PROCESSING_INSTRUCTION_NODE = NodeType[PROCESSING_INSTRUCTION_NODE] = 7;
-var COMMENT_NODE                = NodeType[COMMENT_NODE]                = 8;
-var DOCUMENT_NODE               = NodeType[DOCUMENT_NODE]               = 9;
-var DOCUMENT_TYPE_NODE          = NodeType[DOCUMENT_TYPE_NODE]          = 10;
-var DOCUMENT_FRAGMENT_NODE      = NodeType[DOCUMENT_FRAGMENT_NODE]      = 11;
-var NOTATION_NODE               = NodeType[NOTATION_NODE]               = 12;
+var ELEMENT_NODE                = NodeType.ELEMENT_NODE                = 1;
+var ATTRIBUTE_NODE              = NodeType.ATTRIBUTE_NODE              = 2;
+var TEXT_NODE                   = NodeType.TEXT_NODE                   = 3;
+var CDATA_SECTION_NODE          = NodeType.CDATA_SECTION_NODE          = 4;
+var ENTITY_REFERENCE_NODE       = NodeType.ENTITY_REFERENCE_NODE       = 5;
+var ENTITY_NODE                 = NodeType.ENTITY_NODE                 = 6;
+var PROCESSING_INSTRUCTION_NODE = NodeType.PROCESSING_INSTRUCTION_NODE = 7;
+var COMMENT_NODE                = NodeType.COMMENT_NODE                = 8;
+var DOCUMENT_NODE               = NodeType.DOCUMENT_NODE               = 9;
+var DOCUMENT_TYPE_NODE          = NodeType.DOCUMENT_TYPE_NODE          = 10;
+var DOCUMENT_FRAGMENT_NODE      = NodeType.DOCUMENT_FRAGMENT_NODE      = 11;
+var NOTATION_NODE               = NodeType.NOTATION_NODE               = 12;
 
 
 // ExceptionCode
@@ -92,11 +92,6 @@ copy(ExceptionCode,DOMException)
  * The items in the NodeList are accessible via an integral index, starting from 0.
  */
 function NodeList() {
-	var child = element.firstChild;
-	while(child){
-		this[this.length++] = child;
-		child = child.nextSibling;
-	}
 };
 NodeList.prototype = {
 	/**
@@ -116,6 +111,24 @@ NodeList.prototype = {
 		return this[index] || null;
 	}
 };
+function LiveNodeList(node,refresh){
+	this._node = node;
+	this._refresh = refresh
+}
+LiveNodeList.prototype.item = function(i){
+	this._update();
+	return this[i];
+}
+LiveNodeList.prototype._update = function(){
+	var inc = this._node.ownerDocument._inc;
+	if(this._inc != inc){
+		var ls = this._refresh(this._node);
+		__set__(this,'length',ls.length);
+		copy(ls,this);
+		this._inc = inc;
+	}
+}
+_extends(LiveNodeList,NodeList);
 /**
  * 
  * Objects implementing the NamedNodeMap interface are used to represent collections of nodes that can be accessed by name. Note that NamedNodeMap does not inherit from NodeList; NamedNodeMaps are not maintained in any particular order. Objects contained in an object implementing NamedNodeMap may also be accessed by an ordinal index, but this is simply to allow convenient enumeration of the contents of a NamedNodeMap, and does not imply that the DOM specifies an order to these Nodes.
@@ -123,41 +136,50 @@ NodeList.prototype = {
  * used for attributes or DocumentType entities 
  */
 function NamedNodeMap() {
-	
 };
-/**
- * @return index or undefined(!==null)
- */
-function _findIndexByName(nodeMap,_name){
-	var i = nodeMap.length;
+
+function _findNodeIndex(list,node){
+	var i = list.length;
 	while(i--){
-		var node = nodeMap[i];
-		if(node.nodeName == _name){
-			return i;
-		}
+		if(list[i] == node){return i}
 	}
 }
+
 NamedNodeMap.prototype = {
 	length:0,
 	item:NodeList.prototype.item,
 	getNamedItem: function(key) {
-		return this[_findIndexByName(this,key)]||null;
+		var i = this.length;
+		while(i--){
+			var node = this[i];
+			if(node.nodeName == key){
+				return node;
+			}
+		}
+	},
+	setNamedItem: function(node) {
+		var old = this.getNamedItemNS(node.nodeName);
+		return this._add(node,old);
 	},
 	/* returns Node */
-	setNamedItem: function(node) {// raises: WRONG_DOCUMENT_ERR,NO_MODIFICATION_ALLOWED_ERR,INUSE_ATTRIBUTE_ERR
-		var index = _findIndexByName(this,node.nodeName);
-		if(index >= 0){
-			var old = this[index];
-			this[index] = node;
+	setNamedItemNS: function(node) {// raises: WRONG_DOCUMENT_ERR,NO_MODIFICATION_ALLOWED_ERR,INUSE_ATTRIBUTE_ERR
+		var old = this.getNamedItemNS(node.namespaceURI,node.localName);
+		return this._add(node,old);
+	},
+	_add: function (node,old){
+		if(old){
+			this[_findNodeIndex(old)] = node;
 		}else{
 			this[this.length++] = node;
 		}
 		var el = this._ownerElement;
 		var doc = el && el.ownerDocument;
 		if(doc){
-			doc._setOwnerElement(node,el);
-			doc._update(el,true);
+			//doc._setOwnerElement(node,el);
+			node.ownerElement = el;
+			doc._update(el,node);
 		}
+		
 		return old || null;
 	}, 
 	_removeItem:function(node){
@@ -171,10 +193,11 @@ NamedNodeMap.prototype = {
 					this[i] = this[++i]
 				}
 				this.length = lastIndex;
+				node.ownerElement = null;
 				var el = this._ownerElement;
 				var doc = el && el.ownerDocument;
 				if(doc){//TODO: ignored default value
-					doc._update(el,true);
+					doc._update(el,node);
 				}
 				return old;
 			}
@@ -193,8 +216,14 @@ NamedNodeMap.prototype = {
 	
 	//for level2
 	getNamedItemNS: function(namespaceURI, localName) {
-		var prefix = this._ownerElement._lookupPrefix(namespaceURI);
-		return this.getNamedItem(prefix+':'+localName);
+		var i = this.length;
+		while(i--){
+			var node = this[i];
+			if(node.localName == localName && node.namespaceURI == namespaceURI){
+				return node;
+			}
+		}
+		return null;
 	},
 	removeNamedItemNS:function(namespaceURI,localName){
 		var node = this.getNamedItemNS(namespaceURI,localName);
@@ -229,29 +258,24 @@ DOMImplementation.prototype = {
 	// Introduced in DOM Level 2:
 	createDocument:function(namespaceURI,  qualifiedName, doctype){// raises:INVALID_CHARACTER_ERR,NAMESPACE_ERR,WRONG_DOCUMENT_ERR
 		var doc = new Document();
-		//readonly attribute DocumentType     doctype;
 		doc.doctype = doctype;
 		if(doctype){
 			doc.appendChild(doctype);
 		}
-		//readonly attribute DOMImplementation  implementation;
-		//readonly attribute Element          documentElement;
+		doc.implementation = this;
+		doc.childNodes = new NodeList();
 		if(qualifiedName){
 			var root = doc.createElementNS(namespaceURI,qualifiedName);
-			doc.appendChild(documentElement);
+			doc.appendChild(root);
 		}
 		return doc;
 	},
 	// Introduced in DOM Level 2:
 	createDocumentType:function(qualifiedName, publicId, systemId){// raises:INVALID_CHARACTER_ERR,NAMESPACE_ERR
 		var node = new DocumentType();
-		//  readonly attribute DOMString        name;
 		node.name = qualifiedName;
-		// Introduced in DOM Level 2:
-		//  readonly attribute DOMString        publicId;
+		node.nodeName = qualifiedName;
 		node.publicId = publicId;
-		// Introduced in DOM Level 2:
-		//readonly attribute DOMString        systemId;
 		node.systemId = systemId;
 		// Introduced in DOM Level 2:
 		//readonly attribute DOMString        internalSubset;
@@ -344,6 +368,8 @@ Node.prototype = {
     	return (this.ownerDocument || this)._serializeToString(this);
     }
 };
+
+
 function _xmlEncoder(c){
 	return c == '<' && '&lt;' || c == '&' && '&amp;' || c == '"' && '&quot;'||'&#'+c.charCodeAt()+';'
 }
@@ -376,6 +402,8 @@ function _visitNode(node,callback){
 	return true;
 	
 }
+
+
 function Document(){
 }
 
@@ -385,6 +413,7 @@ Document.prototype = {
 	nodeType :  DOCUMENT_NODE,
 	doctype :  null,
 	documentElement :  null,
+	_inc : 1,
 	/**
 	 * attributes;
 	 * children;
@@ -393,8 +422,26 @@ Document.prototype = {
 	 * nodeValue,Attr:value,CharacterData:data
 	 * prefix
 	 */
-	_update :  function(el){
-		this._inc++;
+	_update :  function(el,attr){
+		if(this._inc){
+			this._inc++;
+			if(attr){
+				if(attr.namespaceURI == 'http://www.w3.org/2000/xmlns/'){
+					//update namespace
+				}
+			}else{//node
+				//update childNodes
+				var cs = el.childNodes;
+				var child = el.firstChild;
+				var i = 0;
+				while(child){
+					cs[i++] = child;
+					child =child.nextSibling;
+				}
+				cs.length = i;
+			}
+		}
+		
 	},
 	_removeChild :  function(parentNode,oldChild){
 		var previous = null,child= parentNode.firstChild;
@@ -450,12 +497,6 @@ Document.prototype = {
 		}while(newFirst !== newLast && (newFirst= newFirst.nextSibling))
 		this._update(parentNode);
 	},
-	_getElementsByTagName :	function(el,tagName){
-		
-	},
-	_getElementsByTagNameNS :	function(el,namespaceURI,localName){
-		
-	},
 	_cloneNode :  function(node,deep){
 		return cloneNode(this,node,deep);
 	},
@@ -471,7 +512,8 @@ Document.prototype = {
 		if(this.documentElement == null && newChild.nodeType == 1){
 			this.documentElement = newChild;
 		}
-		return this._insertBefore(this,newChild,refChild),newChild;
+		
+		return this._insertBefore(this,newChild,refChild),(newChild.ownerDocument = this),newChild;
 	},
 	removeChild :  function(oldChild){
 		if(this.documentElement == oldChild){
@@ -479,17 +521,10 @@ Document.prototype = {
 		}
 		return this._removeChild(this,oldChild);
 	},
-	getElementsByTagName :	function(tagName){
-		return this._getElementsByTagName(this.documentElement,tagName)
-	},
 	
 	// Introduced in DOM Level 2:
 	importNode : function(importedNode,deep){
-		return importNode(this,importdNode,deep);
-	},
-	// Introduced in DOM Level 2:
-	getElementsByTagNameNS :	function(namespaceURI,localName){
-		return this._getElementsByTagNameNS(this.documentElement,namespaceURI,localName)
+		return importNode(this,importedNode,deep);
 	},
 	// Introduced in DOM Level 2:
 	getElementById :	function(id){
@@ -512,15 +547,15 @@ Document.prototype = {
 		node.ownerDocument = this;
 		node.nodeName = tagName;
 		node.tagName = tagName;
-		
+		node.childNodes = new NodeList();
 		var attrs	= node.attributes = new NamedNodeMap();
-		attrs.ownerElement = node;
-		attrs.ownerDocument = this;
+		attrs._ownerElement = node;
 		return node;
 	},
 	createDocumentFragment :	function(){
 		var node = new DocumentFragment();
 		node.ownerDocument = this;
+		node.childNodes = new NodeList();
 		return node;
 	},
 	createTextNode :	function(data){
@@ -566,6 +601,8 @@ Document.prototype = {
 	createElementNS :	function(namespaceURI,qualifiedName){
 		var node = new Element();
 		var pl = qualifiedName.split(':');
+		var attrs	= node.attributes = new NamedNodeMap();
+		node.childNodes = new NodeList();
 		node.ownerDocument = this;
 		node.nodeName = qualifiedName;
 		node.tagName = qualifiedName;
@@ -577,9 +614,7 @@ Document.prototype = {
 			//el.prefix = null;
 			node.localName = qualifiedName;
 		}
-		var attrs	= node.attributes = new NamedNodeMap();
-		attrs.ownerElement = node;
-		attrs.ownerDocument = this;
+		attrs._ownerElement = node;
 		return node;
 	},
 	// Introduced in DOM Level 2:
@@ -611,7 +646,7 @@ Element.prototype = {
 		return this.getAttributeNode(name)!=null;
 	},
 	getAttribute : function(name){
-		var attr = getAttributeNode(name);
+		var attr = this.getAttributeNode(name);
 		return attr && attr.value || '';
 	},
 	setAttribute : function(name, value){
@@ -649,7 +684,7 @@ Element.prototype = {
 		return this.attributes.getNamedItemNS(namespaceURI, localName);
 	},
 	setAttributeNodeNS : function(newAttr){
-		this.attributes.setNamedItem(attr);
+		this.attributes.setNamedItemNS(newAttr);
 	},
 	removeAttributeNS : function(namespaceURI, localName){
 		var attr = this.getAttributeNodeNS(namespaceURI, localName);
@@ -657,10 +692,26 @@ Element.prototype = {
 	},
 	
 	getElementsByTagName : function(name){
-		return this.ownerDocument._getElementsByTagName(this,name)
+		return new LiveNodeList(this.documentElement || this,function(node){
+			var ls = [];
+			_visitNode(node,function(node){
+				if(node.nodeType == ELEMENT_NODE && node.tagName == name){
+					ls.push(node);
+				}
+			});
+			return ls;
+		});
 	},
 	getElementsByTagNameNS : function(namespaceURI, localName){
-		return this.ownerDocument._getElementsByTagNameNS(this,namespaceURI, localName)
+		return new LiveNodeList(this.documentElement || this,function(node){
+			var ls = [];
+			_visitNode(node,function(node){
+				if(node.nodeType == ELEMENT_NODE && node.namespaceURI == namespaceURI && node.localName == localName){
+					ls.push(node);
+				}
+			});
+			return ls;
+		});
 	}
 };
 _extends(Element,Node);
@@ -809,10 +860,9 @@ function serializeToString(node,buf){
 	case COMMENT_NODE:
 		return buf.push( "<!--",node.data,"-->");
 	case DOCUMENT_TYPE_NODE:
-		var nodeName = node.nodeName;
 		var pubid = node.publicId;
 		var sysid = node.systemId;
-		var buf = ['<!DOCTYPE ',nodeName];
+		buf.push('<!DOCTYPE ',node.name);
 		if(pubid){
 			buf.push(' PUBLIC "',pubid);
 			if (sysid && sysid!='.') {
@@ -839,15 +889,16 @@ function serializeToString(node,buf){
 		buf.push('??',node.nodeName);
 	}
 }
-function importedNode(doc,node,deep){
+function importNode(doc,node,deep){
 	var node2;
 	switch (node.nodeType) {
 	case ELEMENT_NODE:
 		node2 = node.cloneNode(false);
+		node2.ownerDocument = doc;
 		var attrs = node2.attributes;
 		var len = attrs.length;
 		for(var i=0;i<len;i++){
-			vist(attrs.item(i));
+			node2.setAttributeNodeNS(importNode(doc,attrs.item(i),deep));
 		}
 	case DOCUMENT_FRAGMENT_NODE:
 		break;
@@ -877,7 +928,7 @@ function importedNode(doc,node,deep){
 	if(deep){
 		var child = node.firstChild;
 		while(child){
-			node2.appendChild(importedNode(doc,child,deep));
+			node2.appendChild(importNode(doc,child,deep));
 			child = child.nextSibling;
 		}
 	}
@@ -896,16 +947,18 @@ function cloneNode(doc,node,deep){
 			}
 		}
 	}
+	if(node.childNodes){
+		node2.childNodes = new NodeList();
+	}
 	node2.ownerDocument = doc;
 	switch (node2.nodeType) {
 	case ELEMENT_NODE:
 		var attrs	= node.attributes;
 		var attrs2	= node2.attributes = new NamedNodeMap();
 		var len = attrs.length
-		attrs2.ownerElement = node2;
-		attrs2.ownerDocument = doc;
+		attrs2._ownerElement = node2;
 		for(var i=0;i<len;i++){
-			attrs2.setNamedItem(cloneNode(doc,attrs.item(0),true));
+			attrs2.setNamedItem(cloneNode(doc,attrs.item(i),true));
 		}
 		break;;
 	case ATTRIBUTE_NODE:
@@ -919,6 +972,27 @@ function cloneNode(doc,node,deep){
 		}
 	}
 	return node2;
+}
+
+function __set__(object,key,value){
+	object[key] = value
+}
+//do dynamic
+if(Object.defineProperty){
+	__set__ = function(object,key,value){
+		object[object['$'+key]||'$$'+key] = value
+	}
+	Object.defineProperty(LiveNodeList.prototype,'length',{
+		get:function(){
+			this._update();
+			return this.$$length;
+		}
+	});
+}
+
+if(typeof require == 'function'){
+	exports.DOMImplementation = DOMImplementation;
+	exports.XMLSerializer = XMLSerializer;
 }
 
 /*
@@ -944,3 +1018,4 @@ Object ProcessingInstruction
 		[readonly]:		target
 						data
 */
+

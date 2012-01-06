@@ -1,551 +1,232 @@
-
-function XMLReader () {
-  this.hander;
-    this.textNode = this.tagName = this.doctype =
-    this.procInstName = this.procInstBody = this.entity =
-    this.attribName = this.attribValue = this.q =
-    this.cdata = this.sgmlDecl = "";
-  this.opt = opt || {};
-  this.tagCase = this.opt.lowercasetags ? "toLowerCase" : "toUpperCase";
-  this.tags = [];
-  this.closed = this.closedRoot = this.sawRoot = false;
-  this.tag = this.error = null;
-  this.strict = !!strict;
-  this.state = S.BEGIN;
-  this.ENTITIES = Object.create(sax.ENTITIES);
-
-  // just for error reporting
-  this.position = this.line = this.column = 0;
-  emit(this, "onready");
-}
-SAXParser.prototype = {
-	parse:function(source,handler){
-		
-	}
-}
 var handlers = 'resolveEntity,getExternalSubset,characters,endDocument,endElement,endPrefixMapping,ignorableWhitespace,processingInstruction,setDocumentLocator,skippedEntity,startDocument,startElement,startPrefixMapping,notationDecl,unparsedEntityDecl,error,fatalError,warning,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,comment,endCDATA,endDTD,endEntity,startCDATA,startDTD,startEntity'.split(',')
-Handler.prototype = {
-	setHander : function(handler){
-		
-	},
-	resolveEntity: function(){
-		
+function XMLReader(){
+	this.stack = [{nsMap:{},nsStack:{}}];
+}
+XMLReader.prototype = {
+	parse:function(source){
+		this.contentHandler.startDocument();
+		parse(this,source);
+		this.contentHandler.endDocument();
 	}
 }
-handlers.replace(/\w+/g,function(k){
-	if(k != 'resolveEntity'){
-		Handler.prototype[k] = function(){
-			var k2 = '$'+k;
-			if(k2 in this){
-				this[k2][k].apply(this,arguments);
+function parse(reader,source){
+	while(true){
+		var i = source.indexOf('<');
+		var next = source.charAt(i+1);
+		if(i<0){
+			appendText(reader,source,source.length);
+			return;
+		}
+		if(i>0){
+			appendText(reader,source,i);
+			source = source.substring(i);
+		}
+		if(next == '/'){
+			var end = source.indexOf('>',3);
+			var qName = source.substring(2,end);
+			var config = reader.stack.pop();
+			source = source.substring(end+1);
+			reader.contentHandler.endElement(config.uri,config.localName,qName);
+			for(qName in config.nsMap){
+				reader.contentHandler.endPrefixMapping(qName) ; //reuse qName as prefix
 			}
+			// end elment
+		}else if(next == '?'){// <?...?>
+			source = parseInstruction(reader,source);
+		}else if(next == '!'){// <!doctype,<![CDATA,<!--
+			source = parseDCC(reader,source);
+		}else{
+			source = parseElementStart(reader,source);
 		}
 	}
-})
-
-// character classes and tokens
-var whitespace = "\n\t ",
-  // this really needs to be replaced with character classes.
-  // XML allows all manner of ridiculous numbers and digits.
-  number = "0124356789",
-  letter = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
-  // (Letter | '_' | ':')
-  nameStart = letter+"_:",
-  nameBody = nameStart+number+"-.",
-  quote = "'\"",
-  entity = number+letter+"#",
-  CDATA = "[CDATA[",
-  DOCTYPE = "DOCTYPE";
-function is (charclass, c) { return charclass.indexOf(c) !== -1 }
-function not (charclass, c) { return !is(charclass, c) }
-
-var S = 0;
-sax.STATE =
-{ BEGIN                     : S++
-, TEXT                      : S++ // general stuff
-, TEXT_ENTITY               : S++ // &amp and such.
-, OPEN_WAKA                 : S++ // <
-, SGML_DECL                 : S++ // <!BLARG
-, SGML_DECL_QUOTED          : S++ // <!BLARG foo "bar
-, DOCTYPE                   : S++ // <!DOCTYPE
-, DOCTYPE_QUOTED            : S++ // <!DOCTYPE "//blah
-, DOCTYPE_DTD               : S++ // <!DOCTYPE "//blah" [ ...
-, DOCTYPE_DTD_QUOTED        : S++ // <!DOCTYPE "//blah" [ "foo
-, COMMENT_STARTING          : S++ // <!-
-, COMMENT                   : S++ // <!--
-, COMMENT_ENDING            : S++ // <!-- blah -
-, COMMENT_ENDED             : S++ // <!-- blah --
-, CDATA                     : S++ // <![CDATA[ something
-, CDATA_ENDING              : S++ // ]
-, CDATA_ENDING_2            : S++ // ]]
-, PROC_INST                 : S++ // <?hi
-, PROC_INST_BODY            : S++ // <?hi there
-, PROC_INST_QUOTED          : S++ // <?hi there
-, PROC_INST_ENDING          : S++ // <?hi there ?
-, OPEN_TAG                  : S++ // <strong
-, OPEN_TAG_SLASH            : S++ // <strong /
-, ATTRIB                    : S++ // <a
-, ATTRIB_NAME               : S++ // <a foo
-, ATTRIB_NAME_SAW_WHITE     : S++ // <a foo _
-, ATTRIB_VALUE              : S++ // <a foo="bar
-, ATTRIB_VALUE_QUOTED       : S++ // <a foo="bar
-, ATTRIB_VALUE_UNQUOTED     : S++ // <a foo="bar
-, ATTRIB_VALUE_ENTITY_Q     : S++ // <foo bar="&quot;"
-, ATTRIB_VALUE_ENTITY_U     : S++ // <foo bar=&quot;
-, CLOSE_TAG                 : S++ // </a
-, CLOSE_TAG_SAW_WHITE       : S++ // </a   >
 }
 
-sax.ENTITIES =
-{ "apos" : "'"
-, "quot" : '"'
-, "amp"  : "&"
-, "gt"   : ">"
-, "lt"   : "<"
+function parseElementStart(reader,source){
+	var tokens = split(source);
+	var qName = tokens[0][0];
+	var localName = qName.substr(qName.indexOf(':')+1);
+	var end = tokens.pop();
+	var nsMap;
+	var uri = null;
+	var attrs = new Attributes();
+	var unsetURIs = [];
+	
+	var len = tokens.length;
+	var i=1;
+	while(i<len){
+		var m = tokens[i++];
+		var key = m[0];//remove = on next expression
+		var value = key.charAt(key.length-1) == '='?key.slice(0,-1):key;
+		var nsp = value.indexOf(':');
+		var prefix = nsp>0?key.substr(0,nsp):null;
+		var attr = attrs[attrs.length++] = {prefix:prefix,qName:value,localName:nsp>0?value.substr(nsp+1):value}
+		
+		if(value == key){//default value
+			//TODO:check
+		}else{
+			//add key value
+			m = tokens[i++];
+			value =  m[0];
+			//key = value;
+			nsp = value.charAt(0);
+			if((nsp == '"' || nsp == "'") && nsp == value.charAt(value.length-1)){
+				value = value.slice(1,-1);
+			}
+			//TODO:encode value
+		}
+		
+		if(prefix == 'xmlns' || value=='xmlns'){
+			attr.uri = 'http://www.w3.org/2000/xmlns/';
+			(nsMap || (nsMap = {}))[prefix] = value;
+		}else if(prefix){
+			if(prefix == 'xml'){
+				attr.uri = 'http://www.w3.org/XML/1998/namespace';
+			}else{
+				unsetURIs.push(attr);
+			}
+		}
+		
+		attr.value = value;
+		attr.offset=m.index;
+	}
+	var stack = reader.stack;
+	var top = stack[stack.length-1];
+	var config = {qName:qName};
+	var nsStack = top.nsStack;
+	//print(stack+'#'+nsStack)
+	nsStack = config.nsStack = nsMap?_set_proto_(nsMap,nsStack):nsStack;
+	config.uri = nsStack[qName.slice(0,-localName.length)];
+	
+	while(attr = unsetURIs.pop()){
+		attr.uri = nsStack[attr.prefix];
+	}
+	if(nsMap){
+		for(prefix in nsMap){
+			reader.contentHandler.startPrefixMapping(prefix, nsMap[prefix]) 
+		}
+	}
+	reader.contentHandler.startElement(uri,localName,qName,attrs);
+	if(end[0].charAt() == '/'){
+		reader.contentHandler.endElement(uri,localName,qName);
+		if(nsMap){
+			for(prefix in nsMap){
+				reader.contentHandler.endPrefixMapping(prefix) 
+			}
+		}
+	}else{
+		stack.push(config);
+	}
+	return source.substr(end.index + end[0].length)
+	
+}
+function _set_proto_(thiz,parent){
+	thiz.__proto__ = parent;
+	return thiz;
+}
+if(!(_set_proto_({},_set_proto_.prototype) instanceof _set_proto_)){
+	_set_proto_ = function(thiz,parent){
+		function p(){};
+		p.prototype = parent;
+		p = new p();
+		for(parent in thiz){
+			p[parent] = thiz[parent];
+		}
+		return p;
+	}
 }
 
-for (var S in sax.STATE) sax.STATE[sax.STATE[S]] = S;
-
-// shorthand
-S = sax.STATE;
-sax.EVENTS = [ // for discoverability.
-  "text", "processinginstruction", "sgmldeclaration",
-  "doctype", "comment", "attribute", "opentag", "closetag",
-  "cdata", "error", "end", "ready" ];
-
-function emit (parser, event, data) {
-  parser[event] && parser[event](data);
+function split(source){
+	var match;
+	var buf = [];
+	var reg = /'[^']+'|"[^"]+"|[^\s<>\/=]+=?|(\/?\s*>|<)/g;
+	reg.lastIndex = 0;
+	reg.exec(source);//skip <
+	while(match = reg.exec(source)){
+		buf.push(match);
+		if(match[1])return buf;
+	}
 }
-function emitNode (parser, nodeType, data) {
-  if (parser.textNode) closeText(parser);
-  emit(parser, nodeType, data);
+function appendText(reader,source,len){
+	reader.contentHandler.characters(source.substr(0,len),0,len);
 }
-function closeText (parser) {
-  parser.textNode = textopts(parser.opt, parser.textNode);
-  if (parser.textNode) emit(parser, "ontext", parser.textNode);
-  parser.textNode = "";
+function parseInstruction(reader,source){
+	var match = /^<?(^S*)\s*([\s\S]*?)?>/.match(source);
+	if(match){
+		var len = match[0].length;
+		reader.contentHandler.processingInstruction(match[1], match[2]) ;
+	}else{//error
+		appendText(reader,source,len =2);
+	}
+	return source.substring(len);
 }
-function textopts (opt, text) {
-  if (opt.trim) text = text.trim();
-  if (opt.normalize) text = text.replace(/\s+/g, " ");
-  return text;
-}
-function error (parser, er) {
-  closeText(parser);
-  er += "\nLine: "+parser.line+
-        "\nColumn: "+parser.column+
-        "\nChar: "+parser.c;
-  er = new Error(er);
-  parser.error = er;
-  emit(parser, "onerror", er);
-  return parser;
-}
-function end (parser) {
-  if (parser.state !== S.TEXT) error(parser, "Unexpected end");
-  closeText(parser);
-  parser.c = "";
-  parser.closed = true;
-  emit(parser, "onend");
-  SAXParser.call(parser, parser.strict, parser.opt);
-  return parser;
-}
-function strictFail (parser, message) {
-  if (parser.strict) error(parser, message);
-}
-function newTag (parser) {
-  if (!parser.strict) parser.tagName = parser.tagName[parser.tagCase]();
-  parser.tag = { name : parser.tagName, attributes : {} };
-}
-function openTag (parser) {
-  parser.sawRoot = true;
-  parser.tags.push(parser.tag);
-  emitNode(parser, "onopentag", parser.tag);
-  parser.tag = null;
-  parser.tagName = parser.attribName = parser.attribValue = "";
-  parser.state = S.TEXT;
-}
-function closeTag (parser) {
-  if (!parser.tagName) {
-    strictFail(parser, "Weird empty close tag.");
-    parser.textNode += "</>";
-    parser.state = S.TEXT;
-    return;
-  }
-  do {
-    if (!parser.strict) parser.tagName = parser.tagName[parser.tagCase]();
-    var closeTo = parser.tagName, close = parser.tags.pop();
-    if (!close) {
-      throw "wtf "+parser.tagName+" "+parser.tags+" "+parser.line+ " "+parser.position;
-    }
-    if (closeTo !== close.name) strictFail(parser, "Unexpected close tag.");
-    parser.tag = close;
-    parser.tagName = close.name;
-    emitNode(parser, "onclosetag", parser.tagName);
-  } while (closeTo !== close.name);
-  if (parser.tags.length === 0) parser.closedRoot = true;
-  parser.tagName = parser.attribValue = parser.attribName = "";
-  parser.tag = null;
-  parser.state = S.TEXT;
-}
-function parseEntity (parser) {
-  var entity = parser.entity.toLowerCase(), num, numStr = "";
-  if (parser.ENTITIES[entity]) return parser.ENTITIES[entity];
-  if (entity.charAt(0) === "#") {
-    if (entity.charAt(1) === "x") {
-      entity = entity.slice(2);
-      num = parseInt(entity, 16), numStr = num.toString(16);
-    } else {
-      entity = entity.slice(1);
-      num = parseInt(entity, 10), numStr = num.toString(10);
-    }
-  }
-  if (numStr.toLowerCase() !== entity) {
-    strictFail(parser, "Invalid character entity");
-    return "&"+parser.entity + ";";
-  }
-  return String.fromCharCode(num);
+function parseDCC(reader,source){//sure start with '<!'
+	var next= source.charAt(2)
+	if(next == '-'){
+		if(source.charAt(3) == '-'){
+			var end = source.indexOf('-->');
+			//append comment source.substring(4,end)//<!--
+			var lex = reader.lexicalHandler
+			lex && lex.comment(source,4,end);
+			return source.substring(end+3)
+		}else{
+			//error
+			appendText(reader,source,3)
+			return source.substr(3);
+		}
+	}else{
+		if(/^<!\[CDATA\[/.test(source)){
+			var end = source.indexOf(']]>');
+			var lex = reader.lexicalHandler;
+			lex && lex.startCDATA();
+			appendText(reader,source.substring(9,end),0,end-9);
+			lex && lex.endCDATA() 
+			return source.substring(end+3);
+		}
+		//<!DOCTYPE
+		//startDTD(java.lang.String name, java.lang.String publicId, java.lang.String systemId) 
+		var matchs = split(source);
+		var len = matchs.length;
+		if(len>1 && /!doctype/i.test(matchs[0][0])){
+			var name = matchs[1][0];
+			var pubid = len>3 && /^public$/i.test(matchs[2][0]) && matchs[3][0]
+			var sysid = len>4 && matchs[4][0];
+			var lex = reader.lexicalHandler;
+			lex && lex.startDTD(name,pubid,sysid);
+			lex && lex.endDTD();
+			matchs = matchs[len-1]
+			return source.substr(matchs.index+matchs[0].length)
+		}else{
+			appendText(reader,source,2)
+			return source.substr(2);
+		}
+	}
 }
 
-function write (chunk) {
-  var parser = this;
-  if (this.error) throw this.error;
-  if (parser.closed) return error(parser,
-    "Cannot write after close. Assign an onready handler.");
-  if (chunk === null) return end(parser);
-  var i = 0, c = ""
-  while (parser.c = c = chunk.charAt(i++)) {
-    parser.position ++;
-    if (c === "\n") {
-      parser.line ++;
-      parser.column = 0;
-    } else parser.column ++;
-    switch (parser.state) {
-      case S.BEGIN:
-        if (c === "<") parser.state = S.OPEN_WAKA;
-        else if (not(whitespace,c)) {
-          // have to process this as a text node.
-          // weird, but happens.
-          strictFail(parser, "Non-whitespace before first tag.");
-          parser.textNode = c;
-          state = S.TEXT;
-        }
-      continue;
-      case S.TEXT:
-        if (c === "<") parser.state = S.OPEN_WAKA;
-        else {
-          if (not(whitespace, c) && (!parser.sawRoot || parser.closedRoot))
-            strictFail("Text data outside of root node.");
-          if (c === "&") parser.state = S.TEXT_ENTITY;
-          else parser.textNode += c;
-        }
-      continue;
-      case S.OPEN_WAKA:
-        // either a /, ?, !, or text is coming next.
-        if (c === "!") {
-          parser.state = S.SGML_DECL;
-          parser.sgmlDecl = "";
-        } else if (is(whitespace, c)) {
-          // wait for it...
-        } else if (is(nameStart,c)) {
-          parser.state = S.OPEN_TAG;
-          parser.tagName = c;
-        } else if (c === "/") {
-          parser.state = S.CLOSE_TAG;
-          parser.tagName = "";
-        } else if (c === "?") {
-          parser.state = S.PROC_INST;
-          parser.procInstName = parser.procInstBody = "";
-        } else {
-          strictFail(parser, "Unencoded <");
-          parser.textNode += "<" + c;
-          parser.state = S.TEXT;
-        }
-      continue;
-      case S.SGML_DECL:
-        if ((parser.sgmlDecl+c).toUpperCase() === CDATA) {
-          parser.state = S.CDATA;
-          parser.sgmlDecl = "";
-          parser.cdata = "";
-        } else if (parser.sgmlDecl+c === "--") {
-          parser.state = S.COMMENT;
-          parser.comment = "";
-          parser.sgmlDecl = "";
-        } else if ((parser.sgmlDecl+c).toUpperCase() === DOCTYPE) {
-          parser.state = S.DOCTYPE;
-          if (parser.doctype || parser.sawRoot) strictFail(parser,
-            "Inappropriately located doctype declaration");
-          parser.doctype = "";
-          parser.sgmlDecl = "";
-        } else if (c === ">") {
-          emitNode(parser, "onsgmldeclaration", parser.sgmlDecl);
-          parser.sgmlDecl = "";
-          parser.state = S.TEXT;
-        } else if (is(quote, c)) {
-          parser.state = S.SGML_DECL_QUOTED;
-          parser.sgmlDecl += c;
-        } else parser.sgmlDecl += c;
-      continue;
-      case S.SGML_DECL_QUOTED:
-        if (c === parser.q) {
-          parser.state = S.SGML_DECL;
-          parser.q = "";
-        }
-        parser.sgmlDecl += c;
-      continue;
-      case S.DOCTYPE:
-        if (c === ">") {
-          parser.state = S.TEXT;
-          emitNode(parser, "ondoctype", parser.doctype);
-          parser.doctype = true; // just remember that we saw it.
-        } else {
-          parser.doctype += c;
-          if (c === "[") parser.state = S.DOCTYPE_DTD;
-          else if (is(quote, c)) {
-            parser.state = S.DOCTYPE_QUOTED;
-            parser.q = c;
-          }
-        }
-      continue;
-      case S.DOCTYPE_QUOTED:
-        parser.doctype += c;
-        if (c === parser.q) {
-          parser.q = "";
-          parser.state = S.DOCTYPE;
-        }
-      continue;
-      case S.DOCTYPE_DTD:
-        parser.doctype += c;
-        if (c === "]") parser.state = S.DOCTYPE;
-        else if (is(quote,c)) {
-          parser.state = S.DOCTYPE_DTD_QUOTED;
-          parser.q = c;
-        }
-      continue;
-      case S.DOCTYPE_DTD_QUOTED:
-        parser.doctype += c;
-        if (c === parser.q) {
-          parser.state = S.DOCTYPE_DTD;
-          parser.q = "";
-        }
-      continue;
-      case S.COMMENT:
-        if (c === "-") parser.state = S.COMMENT_ENDING;
-        else parser.comment += c;
-      continue;
-      case S.COMMENT_ENDING:
-        if (c === "-") {
-          parser.state = S.COMMENT_ENDED;
-          parser.comment = textopts(parser.opt, parser.comment);
-          if (parser.comment) emitNode(parser, "oncomment", parser.comment);
-          parser.comment = "";
-        } else {
-          strictFail(parser, "Invalid comment");
-          parser.comment += "-" + c;
-        }
-      continue;
-      case S.COMMENT_ENDED:
-        if (c !== ">") strictFail(parser, "Malformed comment");
-        else parser.state = S.TEXT;
-      continue;
-      case S.CDATA:
-        if (c === "]") parser.state = S.CDATA_ENDING;
-        else parser.cdata += c;
-      continue;
-      case S.CDATA_ENDING:
-        if (c === "]") parser.state = S.CDATA_ENDING_2;
-        else {
-          parser.cdata += "]" + c;
-          parser.state = S.CDATA;
-        }
-      continue;
-      case S.CDATA_ENDING_2:
-        if (c === ">") {
-          emitNode(parser, "oncdata", parser.cdata);
-          parser.cdata = "";
-          parser.state = S.TEXT;
-        } else {
-          parser.cdata += "]]" + c;
-          parser.state = S.CDATA;
-        }
-      continue;
-      case S.PROC_INST:
-        if (c === "?") parser.state = S.PROC_INST_ENDING;
-        else if (is(whitespace, c)) parser.state = S.PROC_INST_BODY;
-        else parser.procInstName += c;
-      continue;
-      case S.PROC_INST_BODY:
-        if (!parser.procInstBody && is(whitespace, c)) continue;
-        else if (c === "?") parser.state = S.PROC_INST_ENDING;
-        else if (is(quote, c)) {
-          parser.state = S.PROC_INST_QUOTED;
-          parser.q = c;
-          parser.procInstBody += c;
-        } else parser.procInstBody += c;
-      continue;
-      case S.PROC_INST_ENDING:
-        if (c === ">") {
-          emitNode(parser, "onprocessinginstruction", {
-            name : parser.procInstName,
-            body : parser.procInstBody
-          });
-          parser.procInstName = parser.procInstBody = "";
-          parser.state = S.TEXT;
-        } else {
-          parser.procInstBody += "?" + c;
-          parser.state = S.PROC_INST_BODY;
-        }
-      continue;
-      case S.PROC_INST_QUOTED:
-        parser.procInstBody += c;
-        if (c === parser.q) {
-          parser.state = S.PROC_INST_BODY;
-          parser.q = "";
-        }
-      continue;
-      case S.OPEN_TAG:
-        if (is(nameBody, c)) parser.tagName += c;
-        else {
-          newTag(parser);
-          if (c === ">") openTag(parser);
-          else if (c === "/") parser.state = S.OPEN_TAG_SLASH;
-          else {
-            if (not(whitespace, c)) strictFail(
-              parser, "Invalid character in tag name");
-            parser.state = S.ATTRIB;
-          }
-        }
-      continue;
-      case S.OPEN_TAG_SLASH:
-        if (c === ">") {
-          openTag(parser);
-          closeTag(parser);
-        } else {
-          strictFail(parser, "Forward-slash in opening tag not followed by >");
-          parser.state = S.ATTRIB;
-        }
-      continue;
-      case S.ATTRIB:
-        // haven't read the attribute name yet.
-        if (is(whitespace, c)) continue;
-        else if (c === ">") openTag(parser);
-        else if (is(nameStart, c)) {
-          parser.attribName = c;
-          parser.attribValue = "";
-          parser.state = S.ATTRIB_NAME;
-        } else strictFail(parser, "Invalid attribute name");
-      continue;
-      case S.ATTRIB_NAME:
-        if (c === "=") parser.state = S.ATTRIB_VALUE;
-        else if (is(whitespace, c)) parser.state = S.ATTRIB_NAME_SAW_WHITE;
-        else if (is(nameBody, c)) parser.attribName += c;
-        else strictFail(parser, "Invalid attribute name");
-      continue;
-      case S.ATTRIB_NAME_SAW_WHITE:
-        if (c === "=") parser.state = S.ATTRIB_VALUE;
-        else if (is(whitespace, c)) continue;
-        else {
-          strictFail(parser, "Attribute without value");
-          parser.tag.attributes[parser.attribName] = "";
-          parser.attribValue = "";
-          emitNode(parser, "onattribute", { name : parser.attribName, value : "" });
-          parser.attribName = "";
-          if (c === ">") openTag(parser);
-          else if (is(nameStart, c)) {
-            parser.attribName = c;
-            parser.state = S.ATTRIB_NAME;
-          } else {
-            strictFail(parser, "Invalid attribute name");
-            parser.state = S.ATTRIB;
-          }
-        }
-      continue;
-      case S.ATTRIB_VALUE:
-        if (is(quote, c)) {
-          parser.q = c;
-          parser.state = S.ATTRIB_VALUE_QUOTED;
-        } else {
-          strictFail(parser, "Unquoted attribute value");
-          parser.state = S.ATTRIB_VALUE_UNQUOTED;
-          parser.attribValue = c;
-        }
-      continue;
-      case S.ATTRIB_VALUE_QUOTED:
-        if (c !== parser.q) {
-          if (c === "&") parser.state = S.ATTRIB_VALUE_ENTITY_Q;
-          else parser.attribValue += c;
-          continue;
-        }
-        parser.tag.attributes[parser.attribName] = parser.attribValue;
-        emitNode(parser, "onattribute", {
-          name:parser.attribName, value:parser.attribValue});
-        parser.attribName = parser.attribValue = "";
-        parser.q = "";
-        parser.state = S.ATTRIB;
-      continue;
-      case S.ATTRIB_VALUE_UNQUOTED:
-        if (not(whitespace+">",c)) {
-          if (c === "&") parser.state = S.ATTRIB_VALUE_ENTITY_U;
-          else parser.attribValue += c;
-          continue;
-        }
-        emitNode(parser, "onattribute", {
-          name:parser.attribName, value:parser.attribValue});
-        parser.attribName = parser.attribValue = "";
-        if (c === ">") openTag(parser);
-        else parser.state = S.ATTRIB;
-      continue;
-      case S.CLOSE_TAG:
-        if (!parser.tagName) {
-          if (is(whitespace, c)) continue;
-          else if (not(nameStart, c)) strictFail(parser,
-            "Invalid tagname in closing tag.");
-          else parser.tagName = c;
-        }
-        else if (c === ">") closeTag(parser);
-        else if (is(nameBody, c)) parser.tagName += c;
-        else {
-          if (not(whitespace, c)) strictFail(parser,
-            "Invalid tagname in closing tag");
-          parser.state = S.CLOSE_TAG_SAW_WHITE;
-        }
-      continue;
-      case S.CLOSE_TAG_SAW_WHITE:
-        if (is(whitespace, c)) continue;
-        if (c === ">") closeTag(parser);
-        else strictFail("Invalid characters in closing tag");
-      continue;
-      case S.TEXT_ENTITY:
-      case S.ATTRIB_VALUE_ENTITY_Q:
-      case S.ATTRIB_VALUE_ENTITY_U:
-        switch(parser.state) {
-          case S.TEXT_ENTITY:
-            var returnState = S.TEXT, buffer = "textNode";
-          break;
-          case S.ATTRIB_VALUE_ENTITY_Q:
-            var returnState = S.ATTRIB_VALUE_QUOTED, buffer = "attribValue";
-          break;
-          case S.ATTRIB_VALUE_ENTITY_U:
-            var returnState = S.ATTRIB_VALUE_UNQUOTED, buffer = "attribValue";
-          break;
-        }
-        if (c === ";") {
-          parser[buffer] += parseEntity(parser);
-          parser.entity = "";
-          parser.state = returnState;
-        }
-        else if (is(entity, c)) parser.entity += c;
-        else {
-          strictFail("Invalid character entity");
-          parser[buffer] += "&" + parser.entity;
-          parser.entity = "";
-          parser.state = returnState;
-        }
-      continue;
-      default:
-        throw "Unknown state: " + parser.state;
-      break;
-    }
-  }
-  return parser;
+/**
+ * @param source
+ */
+function Attributes(source){
+	
+}
+Attributes.prototype = {
+	length:0,
+	getLocalName:function(i){return this[i].localName},
+	getOffset:function(i){return this[i].offset},
+	getQName:function(i){return this[i].qName},
+	getURI:function(i){return this[i].uri},
+	getValue:function(i){return this[i].value}
+//	,getIndex:function(uri, localName)){
+//		if(localName){
+//			
+//		}else{
+//			var qName = uri
+//		}
+//	},
+//	getValue:function(){return this.getValue(this.getIndex.apply(this,arguments))},
+//	getType:function(uri,localName){}
+//	getType:function(i){},
 }
 
+if(typeof require == 'function'){
+	exports.XMLReader = XMLReader;
+}

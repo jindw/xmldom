@@ -149,6 +149,9 @@ NamedNodeMap.prototype = {
 	length:0,
 	item:NodeList.prototype.item,
 	getNamedItem: function(key) {
+//		if(key.indexOf(':')>0 || key == 'xmlns'){
+//			return null;
+//		}
 		var i = this.length;
 		while(i--){
 			var node = this[i];
@@ -332,7 +335,17 @@ Node.prototype = {
 	},
 	// Modified in DOM Level 2:
 	normalize:function(){
-		this.ownerDocument._normalize(this);
+		var child = this.firstChild;
+		while(child){
+			var next = child.nextSibling;
+			if(next && next.nodeType == TEXT_NODE && child.nodeType == TEXT_NODE){
+				this.removeChild(next);
+				child.appendData(next.data);
+			}else{
+				child.normalize();
+				child = next;
+			}
+		}
 	},
   	// Introduced in DOM Level 2:
 	isSupported:function(feature, version){
@@ -363,9 +376,6 @@ Node.prototype = {
     		}
     	}
     	return null;
-    },
-    toString:function(){
-    	return (this.ownerDocument || this)._serializeToString(this);
     }
 };
 
@@ -651,7 +661,7 @@ Element.prototype = {
 	},
 	setAttribute : function(name, value){
 		var attr = this.ownerDocument.createAttribute(name);
-		attr.value = value;
+		attr.value = attr.nodeValue = value;
 		this.setAttributeNode(attr)
 	},
 	getAttributeNode : function(name){
@@ -677,7 +687,7 @@ Element.prototype = {
 	},
 	setAttributeNS : function(namespaceURI, qualifiedName, value){
 		var attr = this.ownerDocument.createAttributeNS(namespaceURI, qualifiedName);
-		attr.value = value;
+		attr.value = attr.nodeValue = value;
 		this.setAttributeNode(attr)
 	},
 	getAttributeNodeNS : function(namespaceURI, localName){
@@ -816,10 +826,13 @@ function ProcessingInstruction() {
 ProcessingInstruction.prototype.nodeType = PROCESSING_INSTRUCTION_NODE;
 _extends(ProcessingInstruction,Node);
 function XMLSerializer(){}
-Document.prototype._serializeToString = XMLSerializer.prototype.serializeToString = function(node){
+XMLSerializer.prototype.serializeToString = function(node){
 	var buf = [];
 	serializeToString(node,buf);
 	return buf.join('');
+}
+Node.prototype.toString =function(){
+	return XMLSerializer.prototype.serializeToString(this);
 }
 function serializeToString(node,buf){
 	switch(node.nodeType){

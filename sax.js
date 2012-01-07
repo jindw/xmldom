@@ -1,13 +1,31 @@
-var handlers = 'resolveEntity,getExternalSubset,characters,endDocument,endElement,endPrefixMapping,ignorableWhitespace,processingInstruction,setDocumentLocator,skippedEntity,startDocument,startElement,startPrefixMapping,notationDecl,unparsedEntityDecl,error,fatalError,warning,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,comment,endCDATA,endDTD,endEntity,startCDATA,startDTD,startEntity'.split(',')
+//var handlers = 'resolveEntity,getExternalSubset,characters,endDocument,endElement,endPrefixMapping,ignorableWhitespace,processingInstruction,setDocumentLocator,skippedEntity,startDocument,startElement,startPrefixMapping,notationDecl,unparsedEntityDecl,error,fatalError,warning,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,comment,endCDATA,endDTD,endEntity,startCDATA,startDTD,startEntity'.split(',')
 function XMLReader(){
-	this.stack = [{nsMap:{},nsStack:{}}];
+	var reader = this;
+	this._stack = [{nsMap:{},nsStack:{}}];
+	this._entityReplacer = function(a){//no this
+		//&lt;&gt;&amp;&qute;&#160;&#xa0;
+		return _entityReplacer(a,reader);
+	}
+}
+function _entityReplacer(a,reader){
+	var map = reader._entityMap;
+	var k = a.slice(1,-1);
+	if(k.charAt(0) == '#'){
+		return String.fromCharCode(parseInt(k.substr(1).replace('x','0x')))
+	}else if(k in map){
+		return map[k]; 
+	}else{
+		reader.errorHandler && reader.errorHandler.error('entity not found:'+a);
+		return a;
+	}
 }
 XMLReader.prototype = {
 	parse:function(source){
 		this.contentHandler.startDocument();
 		parse(this,source);
 		this.contentHandler.endDocument();
-	}
+	},
+	_entityMap:{'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"},
 }
 function parse(reader,source){
 	while(true){
@@ -24,7 +42,7 @@ function parse(reader,source){
 		if(next == '/'){
 			var end = source.indexOf('>',3);
 			var qName = source.substring(2,end);
-			var config = reader.stack.pop();
+			var config = reader._stack.pop();
 			source = source.substring(end+1);
 			reader.contentHandler.endElement(config.uri,config.localName,qName);
 			for(qName in config.nsMap){
@@ -66,18 +84,19 @@ function parseElementStart(reader,source){
 		}else{
 			//add key value
 			m = tokens[i++];
+			key = value;
 			value =  m[0];
-			//key = value;
 			nsp = value.charAt(0);
 			if((nsp == '"' || nsp == "'") && nsp == value.charAt(value.length-1)){
 				value = value.slice(1,-1);
+				
 			}
+			value = value.replace(/&#?\w+;/g,reader._entityReplacer);;
 			//TODO:encode value
 		}
-		
-		if(prefix == 'xmlns' || value=='xmlns'){
+		if(prefix == 'xmlns' || key=='xmlns'){
 			attr.uri = 'http://www.w3.org/2000/xmlns/';
-			(nsMap || (nsMap = {}))[prefix] = value;
+			(nsMap || (nsMap = {}))[prefix == 'xmlns'?attr.localName:''] = value;
 		}else if(prefix){
 			if(prefix == 'xml'){
 				attr.uri = 'http://www.w3.org/XML/1998/namespace';
@@ -89,14 +108,13 @@ function parseElementStart(reader,source){
 		attr.value = value;
 		attr.offset=m.index;
 	}
-	var stack = reader.stack;
+	var stack = reader._stack;
 	var top = stack[stack.length-1];
 	var config = {qName:qName};
 	var nsStack = top.nsStack;
 	//print(stack+'#'+nsStack)
-	nsStack = config.nsStack = nsMap?_set_proto_(nsMap,nsStack):nsStack;
+	nsStack = config.nsStack = (nsMap?_set_proto_(nsMap,nsStack):nsStack);
 	config.uri = nsStack[qName.slice(0,-localName.length)];
-	
 	while(attr = unsetURIs.pop()){
 		attr.uri = nsStack[attr.prefix];
 	}
@@ -147,7 +165,8 @@ function split(source){
 	}
 }
 function appendText(reader,source,len){
-	reader.contentHandler.characters(source.substr(0,len),0,len);
+	source = source.substr(0,len).replace(/&#?\w+;/g,reader._entityReplacer);
+	reader.contentHandler.characters(source,0,len);
 }
 function parseInstruction(reader,source){
 	var match = /^<?(^S*)\s*([\s\S]*?)?>/.match(source);
@@ -166,7 +185,7 @@ function parseDCC(reader,source){//sure start with '<!'
 			var end = source.indexOf('-->');
 			//append comment source.substring(4,end)//<!--
 			var lex = reader.lexicalHandler
-			lex && lex.comment(source,4,end);
+			lex && lex.comment(source,4,end-4);
 			return source.substring(end+3)
 		}else{
 			//error

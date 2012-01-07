@@ -76,6 +76,7 @@ DOMHandler.prototype = {
 	skippedEntity:function(name) {
 	},
 	endDocument:function() {
+		this.document.normalize();
 	},
 	setDocumentLocator:function (locator) {
 	    this.locator = locator;

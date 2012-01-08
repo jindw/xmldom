@@ -249,3 +249,7 @@ Attributes.prototype = {
 if(typeof require == 'function'){
 	exports.XMLReader = XMLReader;
 }
+
+if(typeof require == 'function'){
+exports.XMLReader=XMLReader;
+}

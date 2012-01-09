@@ -36,7 +36,7 @@
     ],
     "dependencies": {
     },
-    "engines" : { "node" : ">=0.5" },
+    "engines" : { "node" : ">=0.1" },
     "directories": {
         "lib": "./"
     },

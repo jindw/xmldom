@@ -1,5 +1,5 @@
 {
-    "name": "domparser",
+    "name": "xmldom",
     "version": "0.1.1",
     "description": "A W3C Standard based DOMParser and XMLSerializer (DOM Level2 CORE). ",
     "keywords": [

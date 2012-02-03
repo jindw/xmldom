@@ -65,7 +65,6 @@ function parseElementStart(reader,source){
 	var localName = qName.substr(qName.indexOf(':')+1);
 	var end = tokens.pop();
 	var nsMap;
-	var uri = null;
 	var attrs = new Attributes();
 	var unsetURIs = [];
 	
@@ -126,7 +125,7 @@ function parseElementStart(reader,source){
 	}
 	reader.contentHandler.startElement(config.uri,localName,qName,attrs);
 	if(end[0].charAt() == '/'){
-		reader.contentHandler.endElement(uri,localName,qName);
+		reader.contentHandler.endElement(config.uri,localName,qName);
 		if(nsMap){
 			for(prefix in nsMap){
 				reader.contentHandler.endPrefixMapping(prefix) 

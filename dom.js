@@ -617,7 +617,7 @@ Document.prototype = {
 		node.nodeName = qualifiedName;
 		node.tagName = qualifiedName;
 		node.namespaceURI = namespaceURI;
-		if(node.length == 2){
+		if(pl.length == 2){
 			node.prefix = pl[0];
 			node.localName = pl[1];
 		}else{

@@ -114,7 +114,8 @@ function parseElementStart(reader,source){
 	var nsStack = top.nsStack;
 	//print(stack+'#'+nsStack)
 	nsStack = config.nsStack = (nsMap?_set_proto_(nsMap,nsStack):nsStack);
-	config.uri = nsStack[qName.slice(0,-localName.length)];
+	config.uri = nsStack[qName.slice(0,-localName.length-1)];
+
 	while(attr = unsetURIs.pop()){
 		attr.uri = nsStack[attr.prefix];
 	}
@@ -123,7 +124,7 @@ function parseElementStart(reader,source){
 			reader.contentHandler.startPrefixMapping(prefix, nsMap[prefix]) 
 		}
 	}
-	reader.contentHandler.startElement(uri,localName,qName,attrs);
+	reader.contentHandler.startElement(config.uri,localName,qName,attrs);
 	if(end[0].charAt() == '/'){
 		reader.contentHandler.endElement(uri,localName,qName);
 		if(nsMap){

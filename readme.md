@@ -9,8 +9,8 @@ Install:
 	npm install xmldom
 Example:
 -------
-	var doc = new DOMParser()
-	    .parseFromString(
+	var DOMParser = require('xmldom').DOMParser;
+	var doc = new DOMParser().parseFromString(
 	    '<xml xmlns="a" xmlns:c="./lite">\n'+
 	        '\t<child>test</child>\n'+
 	        '\t<child></child>\n'+

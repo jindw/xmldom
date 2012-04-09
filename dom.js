@@ -396,22 +396,22 @@ function _findNSMap(el){
 
 copy(NodeType,Node);
 copy(NodeType,Node.prototype);
+
+/**
+ * @param callback return true for continue,false for break
+ * @return boolean true:continue,false:break;
+ */
 function _visitNode(node,callback){
-	if(!callback(node)){
-		return false;
-	}
-	var next = node.firstChild;
-	if(next){
-		if(!_visitNode(next,callback)){
-			return false;
-		}
-	}
-	if(next=node.nextSibling){
-		return _visitNode(next,callback);
-	}
-	return true;
-	
+        if(callback(node)){
+        	if(node = node.firstChild){
+                	do{
+				if(!_visitNode(node,callback)){return}
+                	}while(node=node.nextSibling)
+        	}
+		return true;
+        }
 }
+
 
 
 function Document(){
@@ -589,8 +589,8 @@ Document.prototype = {
 	createProcessingInstruction :	function(target,data){
 		var node = new ProcessingInstruction();
 		node.ownerDocument = this;
-		node.target = target;
-		node.data = data;
+		node.tagName = node.target = target;
+		node.nodeValue= node.data = data;
 		return node;
 	},
 	createAttribute :	function(name){
@@ -893,7 +893,7 @@ function serializeToString(node,buf){
 		}
 		return;
 	case PROCESSING_INSTRUCTION_NODE:
-		return buf.push( "<?",node.nodeName," ",node.data,"?>");
+		return buf.push( "<?",node.target," ",node.data,"?>");
 	case ENTITY_REFERENCE_NODE:
 		return buf.push( '&',node.nodeName,';');
 	//case ENTITY_NODE:

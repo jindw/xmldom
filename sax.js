@@ -169,7 +169,7 @@ function appendText(reader,source,len){
 	reader.contentHandler.characters(source,0,len);
 }
 function parseInstruction(reader,source){
-	var match = source.match(/^<?(^S*)\s*([\s\S]*?)?>/);
+	var match = source.match(/^<\?(\S*)\s*([\s\S]*?)\?>/);
 	if(match){
 		var len = match[0].length;
 		reader.contentHandler.processingInstruction(match[1], match[2]) ;

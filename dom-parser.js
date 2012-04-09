@@ -49,6 +49,10 @@ DOMHandler.prototype = {
 	    }
 	},
 	endElement:function(namespaceURI, localName, qName) {
+	    var tagName = this.currentElement.tagName;
+	    if(qName != tagName){
+	        console.warn("end tag name: "+qName+' is not match the current start tagName:'+tagName);
+	    }
 	    this.currentElement = this.currentElement.parentNode;
 	},
 	startPrefixMapping:function(prefix, uri) {

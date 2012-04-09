@@ -1,6 +1,6 @@
 {
     "name": "xmldom",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "A W3C Standard based DOMParser and XMLSerializer (DOM Level2 CORE). ",
     "keywords": [
       "javascript",
@@ -28,8 +28,8 @@
     ],
     "repositories": [
         {
-            "type": "svn",
-            "url": "http://lite.googlecode.com/svn/trunk/Lite/web/scripts/org/xidea/lite/util/xml"
+            "type": "git",
+            "url": "git://github.com/jindw/xmldom.git"
         }
     ],
     "implements": [

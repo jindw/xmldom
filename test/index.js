@@ -39,4 +39,19 @@ wows.describe('XML Parser').addBatch({
         	assert.equal(root.namespaceURI,'http://test.com')
         }
     }
+    ,"file parse":{
+    	test:function(){
+			var fs = require('fs');
+			var path = require('path')
+			fs.readFile(path.resolve(__dirname,'./test.xml'), 'ascii', function(err,data){
+				if(err) {
+					console.log("Could not open file"+ err);
+					process.exit(1);
+				}
+				var Dom = require('xmldom').DOMParser;
+				var doc = new Dom().parseFromString(data);
+				console.log(doc.childNodes[0].localName);
+			});
+    	}
+    }
 }).run(); // Run it

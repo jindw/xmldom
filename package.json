@@ -1,6 +1,6 @@
 {
     "name": "xmldom",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "description": "A W3C Standard based DOMParser and XMLSerializer (DOM Level2 CORE). ",
     "keywords": [
       "javascript",
@@ -15,10 +15,20 @@
       "url": "http://www.xidea.org"
     }],
     "contributors": [
+    	{
+         "name" : "Yaron Naveh",
+         "email" : "yaronn01@gmail.com",
+         "web" : "http://webservices20.blogspot.com/"
+		},
+    	{
+         "name" : "Harutyun Amirjanyan",
+         "email" : "amirjanyan@gmail.com",
+         "web" : "https://github.com/nightwing"
+		}
     ],
     "bugs": {
         "email": "jindw@xidea.org",
-        "url": "http://code.google.com/p/lite/issues/list"
+        "url": "http://github.com/jindw/xmldom/issues"
     },
     "licenses": [
         {
@@ -35,6 +45,9 @@
     "implements": [
     ],
     "dependencies": {
+    },
+    "devDependencies" : {
+      "wows" : "*"
     },
     "engines" : { "node" : ">=0.1" },
     "directories": {

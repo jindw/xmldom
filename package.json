@@ -1,6 +1,6 @@
 {
     "name": "xmldom",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "description": "A W3C Standard based DOMParser and XMLSerializer (DOM Level2 CORE). ",
     "keywords": [
       "javascript",

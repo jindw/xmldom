@@ -7,6 +7,7 @@ DOMParser.prototype.parseFromString = function(source){
 	sax.contentHandler = handler;
 	sax.lexicalHandler = handler;
 	sax.errorHandler = handler;
+	
 	sax.parse(source);
 	return handler.document;
 }

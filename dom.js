@@ -399,17 +399,17 @@ copy(NodeType,Node.prototype);
 
 /**
  * @param callback return true for continue,false for break
- * @return boolean true:continue,false:break;
+ * @return boolean true: break visit;
  */
 function _visitNode(node,callback){
-        if(callback(node)){
-        	if(node = node.firstChild){
-                	do{
-				if(!_visitNode(node,callback)){return}
-                	}while(node=node.nextSibling)
-        	}
+	if(callback(node)){
 		return true;
-        }
+	}
+	if(node = node.firstChild){
+		do{
+			if(_visitNode(node,callback)){return true}
+        }while(node=node.nextSibling)
+    }
 }
 
 
@@ -543,9 +543,8 @@ Document.prototype = {
 			if(node.nodeType == 1){
 				if(node.getAttribute('id') == id){
 					rtv = node;
-					return false;
+					return true;
 				}
-				return true;
 			}
 		})
 		return rtv;
@@ -1007,28 +1006,3 @@ if(typeof require == 'function'){
 	exports.DOMImplementation = DOMImplementation;
 	exports.XMLSerializer = XMLSerializer;
 }
-
-/*
-DOM level2 attribute:
-Object Document:		doctype|implementation|documentElement
-Object Node:
-		[readonly]:		nodeName|nodeType|parentNode|childNodes|firstChild|lastChild|previousSibling|nextSibling|attributes|ownerDocument|namespaceURI|localName
-						nodeValue|prefix
-Object NodeList:		length
-Object NamedNodeMap:	length
-Object CharacterData
-		[readonly]:		length
-						data
-Object Attr
-		[readonly]:		name|specified|ownerElement
-						value
-Object Element:			tagName
-Object DocumentType:	name|entities|notations|publicId|systemId|internalSubset
-Object Notation:		publicId|systemId
-Object Entity:			publicId|systemId|notationName
-Object EntityReference
-Object ProcessingInstruction
-		[readonly]:		target
-						data
-*/
-

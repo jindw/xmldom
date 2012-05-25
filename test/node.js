@@ -7,7 +7,7 @@ var parser = new DOMParser();
 wows.describe('XML Node Parse').addBatch({
     'element': function () { 
     	var dom = new DOMParser().parseFromString('<xml><child/></xml>');
-    	console.assert (dom.childNodes.length== 1);
+    	console.assert (dom.childNodes.length== 1,dom.childNodes.length, 1);
     	console.assert (dom.documentElement.childNodes.length== 1);
     	console.assert (dom.documentElement.tagName== 'xml');
     	console.assert (dom.documentElement.firstChild.tagName== 'child');
@@ -28,7 +28,7 @@ wows.describe('XML Node Parse').addBatch({
     'cdata empty': function () {
     	var dom = new DOMParser().parseFromString('<xml><![CDATA[]]>start <![CDATA[]]> end</xml>');
     	var root = dom.documentElement;
-    	console.assert ( getTextContent(root) =='start  end');
+    	console.assert ( root.textContent =='start  end');
     },
     'comment': function(){
     	var dom = new DOMParser().parseFromString('<xml><!-- comment&>< --></xml>');
@@ -63,21 +63,3 @@ wows.describe('XML Node Parse').addBatch({
 //var DOCUMENT_TYPE_NODE          = NodeType.DOCUMENT_TYPE_NODE          = 10;
 //var DOCUMENT_FRAGMENT_NODE      = NodeType.DOCUMENT_FRAGMENT_NODE      = 11;
 //var NOTATION_NODE               = NodeType.NOTATION_NODE               = 12;
-function getTextContent(node){
-	switch(node.nodeType){
-	case 3:
-	case 4:
-	case 5:
-		return node.nodeValue;
-	case 8:
-		return '';
-	default:
-		var buf = [];
-		node = node.firstChild;
-		while(node){
-			buf.push(getTextContent(node));
-			node = node.nextSibling;
-		}
-		return buf.join('');
-	}
-}

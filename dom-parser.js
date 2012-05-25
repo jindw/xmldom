@@ -21,7 +21,7 @@ DOMParser.prototype.parseFromString = function(source){
  * @link http://www.saxproject.org/apidoc/org/xml/sax/helpers/DefaultHandler.html
  */
 function DOMHandler() {
-    this.saxExceptions = [];
+    this.errors = [];
     this.cdata = false;
 }
 
@@ -46,15 +46,16 @@ DOMHandler.prototype = {
 	        var namespaceURI = attrs.getURI(i);
 	        var value = attrs.getValue(i);
 	        var qName = attrs.getQName(i);
-	        this.currentElement.setAttributeNS(namespaceURI, qName, value);
+	        el.setAttributeNS(namespaceURI, qName, value);
 	    }
 	},
 	endElement:function(namespaceURI, localName, qName) {
-	    var tagName = this.currentElement.tagName;
+		var current = this.currentElement
+	    var tagName = current.tagName;
 	    if(qName != tagName){
 	        console.warn("end tag name: "+qName+' is not match the current start tagName:'+tagName);
 	    }
-	    this.currentElement = this.currentElement.parentNode;
+	    this.currentElement = current.parentNode;
 	},
 	startPrefixMapping:function(prefix, uri) {
 	},
@@ -113,13 +114,16 @@ DOMHandler.prototype = {
 	 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
 	 */
 	warning:function(error) {
-	    this.saxExceptions.push(error);
+		console.warn(error);
+	    this.errors.push(error);
 	},
 	error:function(error) {
-	    this.saxExceptions.push(error);
+		console.error(error);
+	    this.errors.push(error);
 	},
 	fatalError:function(error) {
 		console.error(error);
+	    this.errors.push(error);
 	    throw error;
 	}
 }
@@ -178,7 +182,7 @@ function appendElement (hander,node) {
     } else {
         hander.currentElement.appendChild(node);
     }
-}
+}//appendChild and setAttributeNS are preformance key
 
 if(typeof require == 'function'){
 	var XMLReader = require('./sax').XMLReader;

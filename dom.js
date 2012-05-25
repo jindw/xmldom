@@ -115,19 +115,21 @@ function LiveNodeList(node,refresh){
 	this._node = node;
 	this._refresh = refresh
 }
-LiveNodeList.prototype.item = function(i){
-	this._update();
-	return this[i];
-}
-LiveNodeList.prototype._update = function(){
-	var inc = this._node.ownerDocument._inc;
-	if(this._inc != inc){
-		var ls = this._refresh(this._node);
-		__set__(this,'length',ls.length);
-		copy(ls,this);
-		this._inc = inc;
+function _updateLiveList(list){
+	var inc = list._node.ownerDocument._inc;
+	if(list._inc != inc){
+		var ls = list._refresh(list._node);
+		//console.log(ls.length)
+		__set__(list,'length',ls.length);
+		copy(ls,list);
+		list._inc = inc;
 	}
 }
+LiveNodeList.prototype.item = function(i){
+	_updateLiveList(this);
+	return this[i];
+}
+
 _extends(LiveNodeList,NodeList);
 /**
  * 
@@ -145,6 +147,38 @@ function _findNodeIndex(list,node){
 	}
 }
 
+function _addNamedNode(list,node,old){
+	if(old){
+		list[_findNodeIndex(list,old)] = node;
+	}else{
+		list[list.length++] = node;
+	}
+	var el = list._ownerElement;
+	var doc = el && el.ownerDocument;
+	if(doc){
+		//doc._setOwnerElement(node,el);
+		node.ownerElement = el;
+		//_updateAttribute(el,node);
+	}
+	
+	return old || null;
+}
+function _removeNamedNode(list,node){
+	var i = list.length;
+	var lastIndex = i-1;
+	while(i--){
+		var c = list[i];
+		if(node === c){
+			var old = c;
+			while(i<lastIndex){
+				list[i] = list[++i]
+			}
+			list.length = lastIndex;
+			node.ownerElement = null;
+			return old;
+		}
+	}
+}
 NamedNodeMap.prototype = {
 	length:0,
 	item:NodeList.prototype.item,
@@ -162,55 +196,19 @@ NamedNodeMap.prototype = {
 	},
 	setNamedItem: function(node) {
 		var old = this.getNamedItemNS(node.nodeName);
-		return this._add(node,old);
+		return _addNamedNode(this,node,old);
 	},
 	/* returns Node */
 	setNamedItemNS: function(node) {// raises: WRONG_DOCUMENT_ERR,NO_MODIFICATION_ALLOWED_ERR,INUSE_ATTRIBUTE_ERR
 		var old = this.getNamedItemNS(node.namespaceURI,node.localName);
-		return this._add(node,old);
+		return _addNamedNode(this,node,old);
 	},
-	_add: function (node,old){
-		if(old){
-			this[_findNodeIndex(old)] = node;
-		}else{
-			this[this.length++] = node;
-		}
-		var el = this._ownerElement;
-		var doc = el && el.ownerDocument;
-		if(doc){
-			//doc._setOwnerElement(node,el);
-			node.ownerElement = el;
-			doc._update(el,node);
-		}
-		
-		return old || null;
-	}, 
-	_removeItem:function(node){
-		var i = this.length;
-		var lastIndex = i-1;
-		while(i--){
-			var c = this[i];
-			if(node === c){
-				var old = c;
-				while(i<lastIndex){
-					this[i] = this[++i]
-				}
-				this.length = lastIndex;
-				node.ownerElement = null;
-				var el = this._ownerElement;
-				var doc = el && el.ownerDocument;
-				if(doc){//TODO: ignored default value
-					doc._update(el,node);
-				}
-				return old;
-			}
-		}
-	},
+
 	/* returns Node */
 	removeNamedItem: function(key) {
 		var node = this.getNamedItem(key);
 		if(node){
-			this._removeItem(node);
+			_removeNamedNode(this,node);
 		}else{
 			throw DOMException(NOT_FOUND_ERR,new Error())
 		}
@@ -231,7 +229,7 @@ NamedNodeMap.prototype = {
 	removeNamedItemNS:function(namespaceURI,localName){
 		var node = this.getNamedItemNS(namespaceURI,localName);
 		if(node){
-			this._removeItem(node);
+			_removeNamedNode(this,node);
 		}else{
 			throw DOMException(NOT_FOUND_ERR,new Error())
 		}
@@ -313,7 +311,7 @@ Node.prototype = {
 	localName : null,
 	// Modified in DOM Level 2:
 	insertBefore:function(newChild, refChild){//raises 
-		return this.ownerDocument._insertBefore(this,newChild,refChild);
+		return _insertBefore(this,newChild,refChild);
 	},
 	replaceChild:function(newChild, oldChild){//raises 
 		this.insertBefore(newChild,oldChild);
@@ -322,7 +320,7 @@ Node.prototype = {
 		}
 	},
 	removeChild:function(oldChild){
-		return this.ownerDocument._removeChild(this,oldChild);
+		return _removeChild(this,oldChild);
 	},
 	appendChild:function(newChild){
 		return this.insertBefore(newChild,null);
@@ -331,7 +329,7 @@ Node.prototype = {
 		return this.firstChild != null;
 	},
 	cloneNode:function(deep){
-		return (this.ownerDocument||this)._cloneNode(this,deep)
+		cloneNode(this.ownerDocument||this,this,deep);
 	},
 	// Modified in DOM Level 2:
 	normalize:function(){
@@ -356,9 +354,33 @@ Node.prototype = {
     	return this.attributes.length>0;
     },
     lookupPrefix:function(namespaceURI){
-    	var map = _findNSMap(this)
-    	if(namespaceURI in map){
-    		return map[namespaceURI]
+    	var el = this;
+    	while(el){
+    		var map = el._nsMap;
+    		//console.dir(map)
+    		if(map){
+    			for(var n in map){
+    				if(map[n] == namespaceURI){
+    					return n;
+    				}
+    			}
+    		}
+    		el = el.nodeType == 2?el.ownerDocument : el.parentNode;
+    	}
+    	return null;
+    },
+    // Introduced in DOM Level 3:
+    lookupNamespaceURI:function(prefix){
+    	var el = this;
+    	while(el){
+    		var map = el._nsMap;
+    		//console.dir(map)
+    		if(map){
+    			if(prefix in map){
+    				return map[prefix] ;
+    			}
+    		}
+    		el = el.nodeType == 2?el.ownerDocument : el.parentNode;
     	}
     	return null;
     },
@@ -366,16 +388,6 @@ Node.prototype = {
     isDefaultNamespace:function(namespaceURI){
     	var prefix = this.lookupPrefix(namespaceURI);
     	return prefix == null;
-    },
-    // Introduced in DOM Level 3:
-    lookupNamespaceURI:function(prefix){
-    	var map = _findNSMap(this)
-    	for(var n in map){
-    		if(map[n] == prefix){
-    			return n;
-    		}
-    	}
-    	return null;
     }
 };
 
@@ -383,16 +395,7 @@ Node.prototype = {
 function _xmlEncoder(c){
 	return c == '<' && '&lt;' || c == '&' && '&amp;' || c == '"' && '&quot;'||'&#'+c.charCodeAt()+';'
 }
-function _findNSMap(el){
-	while(el.nodeType !== ELEMENT_NODE){
-		if(el.nodeType === ATTRIBUTE_NODE){
-			el = el.ownerElement;
-		}else{
-			el = el.parentNode;
-		}
-	}
-	return el._namespaceMap;
-}
+
 
 copy(NodeType,Node);
 copy(NodeType,Node.prototype);
@@ -416,7 +419,126 @@ function _visitNode(node,callback){
 
 function Document(){
 }
+function _onAddAttribute(doc,el,newAttr){
+	doc && doc._inc++;
+	var ns = newAttr.namespaceURI ;
+	if(ns == 'http://www.w3.org/2000/xmlns/'){
+		//update namespace
+		el._nsMap[newAttr.prefix?newAttr.localName:''] = newAttr.value
+	}
+}
+function _onRemoveAttribute(doc,el,newAttr,remove){
+	doc && doc._inc++;
+	var ns = newAttr.namespaceURI ;
+	if(ns == 'http://www.w3.org/2000/xmlns/'){
+		//update namespace
+		delete el._nsMap[newAttr.prefix?newAttr.localName:'']
+	}
+}
+function _onUpdateChild(doc,el,newChild){
+	if(doc && doc._inc){
+		doc._inc++;
+		//update childNodes
+		var cs = el.childNodes;
+		if(newChild){
+			cs[cs.length++] = child;
+		}else{
+			//console.log(1)
+			var child = el.firstChild;
+			var i = 0;
+			while(child){
+				cs[i++] = child;
+				child =child.nextSibling;
+			}
+			cs.length = i;
+		}
+	}
+}
 
+/**
+ * attributes;
+ * children;
+ * 
+ * writeable properties:
+ * nodeValue,Attr:value,CharacterData:data
+ * prefix
+ */
+function _removeChild(parentNode,oldChild){
+	var previous = null,child= parentNode.firstChild;
+	while(child){
+		var next = child.nextSibling;
+		if(child === oldChild){
+			oldChild.parentNode = null;//remove it as a flag of not in document
+			//_visitNode(oldNode,function(node){oldChild.ownerDocument = null;})//can not remove ownerDocument
+			if(previous){
+				previous.nextSibling = next;
+			}else{
+				parentNode.firstChild = next;
+			}
+			if(next){
+				next.previousSibling = previous;
+			}else{
+				parentNode.lastChild = previous;
+			}
+			_onUpdateChild(parentNode.ownerDocument,parentNode);
+			return child;
+		}
+		previous = child;
+		child = next;
+	}
+}
+/**
+ * preformance key(refChild == null)
+ */
+function _insertBefore(parentNode,newChild,refChild){
+	var cp = newChild.parentNode;
+	if(cp){
+		cp.removeChild(newChild);//remove and update
+	}
+	if(newChild.nodeType === DOCUMENT_FRAGMENT_NODE){
+		var newFirst = newChild.firstNode;
+		var newLast = newChild.lastChild;
+	}else{
+		newFirst = newLast = newChild;
+	}
+	if(refChild == null){
+		var pre = parentNode.lastChild;
+		parentNode.lastChild = newLast;
+	}else{
+		var pre = refChild.previousSibling;
+		newLast.nextSibling = refChild.nextSibling;
+	}
+	if(pre){
+		pre.nextSibling = newFirst;
+	}else{
+		parentNode.firstChild = newFirst;
+	}
+	newFirst.previousSibling = pre;
+	do{
+		newFirst.parentNode = parentNode;
+	}while(newFirst !== newLast && (newFirst= newFirst.nextSibling))
+	_onUpdateChild(parentNode.ownerDocument||parentNode,parentNode);
+}
+function _appendSingleChild(parentNode,newChild){
+	var pre = parentNode.lastChild;
+	var cp = newChild.parentNode;
+	if(cp){
+		if(cp !== parentChild){
+			cp.removeChild(newChild);//remove and update
+			newChild.parentNode = parentNode;
+		}
+	}else{
+		newChild.parentNode = parentNode;
+	}
+	newChild.previousSibling = pre;
+	if(pre){
+		pre.nextSibling = newChild;
+	}else{
+		parentNode.firstChild = newChild;
+	}
+	parentNode.lastChild = newChild;
+	_onUpdateChild(parentNode.ownerDocument,parentNode,newChild);
+}
 Document.prototype = {
 	//implementation : null,
 	nodeName :  '#document',
@@ -424,92 +546,7 @@ Document.prototype = {
 	doctype :  null,
 	documentElement :  null,
 	_inc : 1,
-	/**
-	 * attributes;
-	 * children;
-	 * 
-	 * writeable properties:
-	 * nodeValue,Attr:value,CharacterData:data
-	 * prefix
-	 */
-	_update :  function(el,attr){
-		if(this._inc){
-			this._inc++;
-			if(attr){
-				if(attr.namespaceURI == 'http://www.w3.org/2000/xmlns/'){
-					//update namespace
-				}
-			}else{//node
-				//update childNodes
-				var cs = el.childNodes;
-				var child = el.firstChild;
-				var i = 0;
-				while(child){
-					cs[i++] = child;
-					child =child.nextSibling;
-				}
-				cs.length = i;
-			}
-		}
-		
-	},
-	_removeChild :  function(parentNode,oldChild){
-		var previous = null,child= parentNode.firstChild;
-		while(child){
-			var next = child.nextSibling;
-			if(child === oldChild){
-				oldChild.parentNode = null;//remove it as a flag of not in document
-				//_visitNode(oldNode,function(node){oldChild.ownerDocument = null;})//can not remove ownerDocument
-				if(previous){
-					previous.nextSibling = next;
-				}else{
-					parentNode.firstChild = next;
-				}
-				if(next){
-					next.previousSibling = previous;
-				}else{
-					parentNode.lastChild = previous;
-				}
-				this._update(parentNode);
-				return child;
-			}
-			previous = child;
-			child = next;
-		}
-	},
 	
-	_insertBefore :  function(parentNode,newChild,refChild){
-		var cp = newChild.parentNode;
-		if(cp){
-			cp.removeChild(newChild);//remove and update
-		}
-		if(newChild.nodeType === DOCUMENT_FRAGMENT_NODE){
-			var newFirst = newChild.firstNode;
-			var newLast = newChild.lastChild;
-		}else{
-			newFirst = newLast = newChild;
-		}
-		if(refChild == null){
-			var pre = parentNode.lastChild;
-			parentNode.lastChild = newLast;
-		}else{
-			var pre = refChild.previousSibling;
-			newLast.nextSibling = refChild.nextSibling;
-		}
-		if(pre){
-			pre.nextSibling = newFirst;
-		}else{
-			parentNode.firstChild = newFirst;
-		}
-		newFirst.previousSibling = pre;
-		do{
-			newFirst.parentNode = parentNode;
-		}while(newFirst !== newLast && (newFirst= newFirst.nextSibling))
-		this._update(parentNode);
-	},
-	_cloneNode :  function(node,deep){
-		return cloneNode(this,node,deep);
-	},
 	insertBefore :  function(newChild, refChild){//raises 
 		if(newChild.nodeType == DOCUMENT_FRAGMENT_NODE){
 			var child = newChild.firstChild;
@@ -523,15 +560,14 @@ Document.prototype = {
 			this.documentElement = newChild;
 		}
 		
-		return this._insertBefore(this,newChild,refChild),(newChild.ownerDocument = this),newChild;
+		return _insertBefore(this,newChild,refChild),(newChild.ownerDocument = this),newChild;
 	},
 	removeChild :  function(oldChild){
 		if(this.documentElement == oldChild){
 			this.documentElement = null;
 		}
-		return this._removeChild(this,oldChild);
+		return _removeChild(this,oldChild);
 	},
-	
 	// Introduced in DOM Level 2:
 	importNode : function(importedNode,deep){
 		return importNode(this,importedNode,deep);
@@ -648,6 +684,7 @@ _extends(Document,Node);
 
 
 function Element() {
+	this._nsMap = {};
 };
 Element.prototype = {
 	nodeType : ELEMENT_NODE,
@@ -658,23 +695,51 @@ Element.prototype = {
 		var attr = this.getAttributeNode(name);
 		return attr && attr.value || '';
 	},
+	getAttributeNode : function(name){
+		return this.attributes.getNamedItem(name);
+	},
 	setAttribute : function(name, value){
 		var attr = this.ownerDocument.createAttribute(name);
 		attr.value = attr.nodeValue = value;
 		this.setAttributeNode(attr)
 	},
-	getAttributeNode : function(name){
-		return this.attributes.getNamedItem(name);
-	},
-	setAttributeNode : function(newAttr){
-		this.attributes.setNamedItem(newAttr);
-	},
-	removeAttributeNode : function(oldAttr){
-		this.atttributes._removeItem(oldAttr);
-	},
 	removeAttribute : function(name){
 		var attr = this.getAttributeNode(name)
 		attr && this.removeAttributeNode(attr);
+	},
+	
+	//four real opeartion method
+	appendChild:function(newChild){
+		if(newChild.nodeType === DOCUMENT_FRAGMENT_NODE){
+			return this.insertBefore(newChild,null);
+		}else{
+			return _appendSingleChild(this,newChild);
+		}
+	},
+	setAttributeNode : function(newAttr){
+		var old = this.attributes.setNamedItem(newAttr);
+		old && _onRemoveAttribute(this.ownerDocument,this,old);
+		_onAddAttribute(this.ownerDocument,this,newAttr);
+		
+		return old;
+	},
+	removeAttributeNode : function(oldAttr){
+		var old = this.attributes.removeNamedItem(oldAttr);
+		old && _onRemoveAttribute(this,old);
+		return old
+	},
+	setAttributeNodeNS : function(newAttr){
+		var attrs = this.attributes;
+		var old = attrs.getNamedItemNS(newAttr.namespaceURI,newAttr.localName);
+		_addNamedNode(attrs,newAttr,old)
+		old && _onRemoveAttribute(this.ownerDocument,this,old);
+		_onAddAttribute(this.ownerDocument,this,newAttr);
+		return old;
+	},
+	//get real attribute name,and remove it by removeAttributeNode
+	removeAttributeNS : function(namespaceURI, localName){
+		var old = this.getAttributeNodeNS(namespaceURI, localName);
+		old && this.removeAttributeNode(old);
 	},
 	
 	hasAttributeNS : function(namespaceURI, localName){
@@ -691,13 +756,6 @@ Element.prototype = {
 	},
 	getAttributeNodeNS : function(namespaceURI, localName){
 		return this.attributes.getNamedItemNS(namespaceURI, localName);
-	},
-	setAttributeNodeNS : function(newAttr){
-		this.attributes.setNamedItemNS(newAttr);
-	},
-	removeAttributeNS : function(namespaceURI, localName){
-		var attr = this.getAttributeNodeNS(namespaceURI, localName);
-		attr && this.removeAttributeNode(attr);
 	},
 	
 	getElementsByTagName : function(name){
@@ -970,7 +1028,7 @@ function cloneNode(doc,node,deep){
 		var len = attrs.length
 		attrs2._ownerElement = node2;
 		for(var i=0;i<len;i++){
-			attrs2.setNamedItem(cloneNode(doc,attrs.item(i),true));
+			node2.setAttributeNode(cloneNode(doc,attrs.item(i),true));
 		}
 		break;;
 	case ATTRIBUTE_NODE:
@@ -992,15 +1050,56 @@ function __set__(object,key,value){
 //do dynamic
 if(Object.defineProperty){
 	__set__ = function(object,key,value){
-		object[object['$'+key]||'$$'+key] = value
+		//console.log(value)
+		object['$$'+key] = value
 	}
 	Object.defineProperty(LiveNodeList.prototype,'length',{
 		get:function(){
-			this._update();
+			_updateLiveList(this);
 			return this.$$length;
 		}
 	});
+	Object.defineProperty(Node.prototype,'textContent',{
+		get:function(){
+			return getTextContent(this);
+		},
+		set:function(data){
+			switch(this.nodeType){
+			case 1:
+			case 11:
+				var c = node.firstChild;
+				while(c){
+					node.removeChild(c)
+					c = c.nextSibling;
+				}
+				return ;
+			default:
+				//TODO:
+				this.data = data;
+				this.value = value;
+				this.nodeValue = data;
+			}
+		}
+	})
+	function getTextContent(node){
+		switch(node.nodeType){
+		case 1:
+		case 11:
+			var buf = [];
+			node = node.firstChild;
+			while(node){
+				if(node.nodeType!==7 && node.nodeType !==8){
+					buf.push(getTextContent(node));
+				}
+				node = node.nextSibling;
+			}
+			return buf.join('');
+		default:
+			return node.nodeValue;
+		}
+	}
 }
+
 
 if(typeof require == 'function'){
 	exports.DOMImplementation = DOMImplementation;

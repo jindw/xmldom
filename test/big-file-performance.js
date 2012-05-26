@@ -23,6 +23,10 @@ function libxml(data){
 		console.time('libxml');
 		var doc = Libxml.parseXmlString(data);
 		console.timeEnd('libxml');
+		var ToString=doc.toString ;
+		doc.toString = function(){
+			return ToString.apply(this,arguments).replace(/^\s+|\s+$/g,'');
+		}
 		return doc;
 	}else{
 		console.warn('libxml is not installed')
@@ -55,8 +59,8 @@ wows.describe('XML Node Parse').addBatch({
 		var doc3 = libxml(data);
 		
 		
-		xmldomresult = (doc1+'').replace(/^<\?.*?\?>|<!\[CDATA\[\]\]>/g,'')
-		domjsresult = (doc2+'').replace(/^<\?.*?\?>|<!\[CDATA\[\]\]>/g,'')
+		xmldomresult = (doc1+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
+		domjsresult = (doc2+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
 		
 		
 //		var begin = 0;

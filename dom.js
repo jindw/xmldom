@@ -329,7 +329,7 @@ Node.prototype = {
 		return this.firstChild != null;
 	},
 	cloneNode:function(deep){
-		cloneNode(this.ownerDocument||this,this,deep);
+		return cloneNode(this.ownerDocument||this,this,deep);
 	},
 	// Modified in DOM Level 2:
 	normalize:function(){
@@ -758,11 +758,11 @@ Element.prototype = {
 		return this.attributes.getNamedItemNS(namespaceURI, localName);
 	},
 	
-	getElementsByTagName : function(name){
-		return new LiveNodeList(this.documentElement || this,function(node){
+	getElementsByTagName : function(tagName){
+		return new LiveNodeList(this.documentElement || this,function(base){
 			var ls = [];
-			_visitNode(node,function(node){
-				if(node.nodeType == ELEMENT_NODE && node.tagName == name){
+			_visitNode(base,function(node){
+				if(node !== base && node.nodeType == ELEMENT_NODE && (tagName === '*' || node.tagName == tagName)){
 					ls.push(node);
 				}
 			});
@@ -770,10 +770,10 @@ Element.prototype = {
 		});
 	},
 	getElementsByTagNameNS : function(namespaceURI, localName){
-		return new LiveNodeList(this.documentElement || this,function(node){
+		return new LiveNodeList(this.documentElement || this,function(base){
 			var ls = [];
-			_visitNode(node,function(node){
-				if(node.nodeType == ELEMENT_NODE && node.namespaceURI == namespaceURI && node.localName == localName){
+			_visitNode(base,function(node){
+				if(node !== base && node.nodeType === ELEMENT_NODE && node.namespaceURI === namespaceURI && (localName === '*' || node.localName == localName)){
 					ls.push(node);
 				}
 			});
@@ -785,7 +785,7 @@ _extends(Element,Node);
 function Attr() {
 };
 Attr.prototype.nodeType = ATTRIBUTE_NODE;
-_extends(Attr,CharacterData);
+_extends(Attr,Node);
 
 
 function CharacterData() {

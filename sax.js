@@ -9,7 +9,8 @@ XMLReader.prototype = {
 		parse(source,this.entityMap,contentHandler,this.lexicalHandler,this.errorHandler);
 		contentHandler.endDocument();
 	},
-	entityMap:{'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"},
+	entityMap:{'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'",
+		'nbsp':'&#160;','copy':'&#169;'}
 }
 function parse(source,entityMap,contentHandler,lexHandler,errorHandler){
 	function entityReplacer(a){

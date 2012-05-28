@@ -10,7 +10,8 @@ var assert = require('assert');
 var oldParser = DOMParser.prototype.parseFromString ;
 function format(s){
 	if(libxml){
-		var result = libxml.parseXmlString(s).toString();
+		var result = libxml.parseXmlString(s).toString().replace(/^\s+|\s+$/g,'');
+		//console.log(result.charCodeAt().toString(16),result)
 	}else{
 		var domjs = new DomJS.DomJS();
 		domjs.parse(s, function(err, dom) {
@@ -23,8 +24,9 @@ DOMParser.prototype.parseFromString = function(data){
 	var doc = oldParser.apply(this,arguments);
 	var domjsresult = format(data);
 	var xmldomresult = new XMLSerializer().serializeToString(doc);
-	xmldomresult = xmldomresult.replace(/^<\?.*?\?>|<!\[CDATA\[\]\]>/g,'')
-	domjsresult = domjsresult.replace(/^<\?.*?\?>|<!\[CDATA\[\]\]>/g,'')
+	xmldomresult = xmldomresult.replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
+	domjsresult = domjsresult.replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
+	//console.log('['+xmldomresult+'],['+domjsresult+']')
 	assert.equal(xmldomresult,domjsresult);
 	return doc;
 }

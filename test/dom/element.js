@@ -16,6 +16,15 @@ wows.describe('XML Namespace Parse').addBatch({
        console.assert(childs.item(2).getAttribute('attr')=="3",childs.item(2)+'');
        console.assert(childs.length==3,3,childs.length);
        
+       var childs = dom.getElementsByTagName('child');
+       console.assert(childs.item(0).getAttribute('attr')=="1",childs.item(0)+'');
+       console.assert(childs.item(1).getAttribute('attr')=="2",childs.item(1)+'');
+       console.assert(childs.item(2).getAttribute('attr')=="3",childs.item(2)+'');
+       console.assert(childs.length==3,3,childs.length);
+       
+       
+       
+       
        
        var childs = dom.documentElement.getElementsByTagName('*');
        for(var i=0,buf = [];i<childs.length;i++){
@@ -36,10 +45,21 @@ console.log(entries[0].nodeName);
        		'<t:test/><test/><t2:test/>'+
        		'<child attr="1"><test><child attr="2"/></test></child>' +
        		'<child attr="3"/></xml>','text/xml');
+       		
        var childs = dom.documentElement.getElementsByTagNameNS("http://test.com",'*');
        console.assert(childs.length==6,childs.length);
+       
+        var childs = dom.getElementsByTagNameNS("http://test.com",'*');
+       console.assert(childs.length==6,childs.length);
+       
+       
        var childs = dom.documentElement.getElementsByTagNameNS("http://test.com",'test');
        console.assert(childs.length==3,childs.length);
+       
+       var childs = dom.getElementsByTagNameNS("http://test.com",'test');
+       console.assert(childs.length==3,childs.length);
+       
+       
        
     },
     'getElementById': function () { 
@@ -50,5 +70,18 @@ console.log(entries[0].nodeName);
        console.assert(dom.getElementById('a1').getAttribute('title')=="1",dom.getElementById('a1'));
        console.assert(dom.getElementById('a2').getAttribute('title')=="2",dom.getElementById('a2'));
        console.assert(dom.getElementById('a2').getAttribute('title2')=="",dom.getElementById('a2'));
+    },
+    "append exist child":function(){
+       var dom = new DOMParser().parseFromString('<xml xmlns="http://test.com" id="root">' +
+       		'<child id="a1" title="1"><child id="a2"  title="2"/></child>' +
+       		'<child id="a1"   title="3"/></xml>','text/xml');
+    },
+    "append exist other child":function(){
+    	//todo
+    },
+    "nested append failed":function(){
+    },
+    "self append failed":function(){
+    	
     }
 }).run(); // Run it

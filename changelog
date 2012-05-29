@@ -1,0 +1,4 @@
+0.1.8
+ * Add: some test case from node-o3-xml(excludes xpath support)
+ * Fix: remove existed attribute before setting  (bug introduced in v0.1.5)
+ * Fix: index direct access for childNodes and any NodeList collection(not w3c standard)

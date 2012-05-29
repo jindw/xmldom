@@ -114,6 +114,7 @@ NodeList.prototype = {
 function LiveNodeList(node,refresh){
 	this._node = node;
 	this._refresh = refresh
+	_updateLiveList(this);
 }
 function _updateLiveList(list){
 	var inc = list._node.ownerDocument._inc;
@@ -441,7 +442,7 @@ function _onUpdateChild(doc,el,newChild){
 		//update childNodes
 		var cs = el.childNodes;
 		if(newChild){
-			cs[cs.length++] = child;
+			cs[cs.length++] = newChild;
 		}else{
 			//console.log(1)
 			var child = el.firstChild;

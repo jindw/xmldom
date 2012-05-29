@@ -4,6 +4,8 @@ var DOMParser = require('xmldom').DOMParser;
 // Create a Test Suite
 wows.describe('XML Namespace Parse').addBatch({
     'getElementsByTagName': function () { 
+    	
+
        var dom = new DOMParser().parseFromString('<xml xmlns="http://test.com" xmlns:t="http://test.com" xmlns:t2="http://test2.com">' +
        		'<t:test/><test/><t2:test/>'+
        		'<child attr="1"><test><child attr="2"/></test></child>' +
@@ -21,6 +23,13 @@ wows.describe('XML Namespace Parse').addBatch({
        }
        console.assert(childs.length==7,childs.length,buf);
        
+       
+       
+       
+var feed = new DOMParser().parseFromString('<feed><entry>foo</entry></feed>');
+var entries = feed.documentElement.getElementsByTagName('entry');
+console.log(entries[0].nodeName);
+       console.log(feed.documentElement.childNodes.item(0).nodeName);
     },
     'getElementsByTagNameNS': function () { 
        var dom = new DOMParser().parseFromString('<xml xmlns="http://test.com" xmlns:t="http://test.com" xmlns:t2="http://test2.com">' +

@@ -481,12 +481,12 @@ function _removeChild(parentNode,child){
 	if(previous){
 		previous.nextSibling = next;
 	}else{
-		parentNode.firstChild = child
+		parentNode.firstChild = next
 	}
 	if(next){
 		next.previousSibling = previous;
 	}else{
-		parentNode.lastChild = child;
+		parentNode.lastChild = previous;
 	}
 	_onUpdateChild(parentNode.ownerDocument,parentNode);
 	return child;
@@ -526,14 +526,14 @@ function _insertBefore(parentNode,newChild,nextChild){
 	//console.log(parentNode.lastChild.nextSibling == null)
 }
 function _appendSingleChild(parentNode,newChild){
-	var pre = parentNode.lastChild;
 	var cp = newChild.parentNode;
 	if(cp){
+		var pre = parentNode.lastChild;
 		cp.removeChild(newChild);//remove and update
-		newChild.parentNode = parentNode;
-	}else{
-		newChild.parentNode = parentNode;
+		var pre = parentNode.lastChild;
 	}
+	var pre = parentNode.lastChild;
+	newChild.parentNode = parentNode;
 	newChild.previousSibling = pre;
 	newChild.nextSibling = null;
 	if(pre){

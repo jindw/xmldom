@@ -30,6 +30,7 @@ function parse(source,entityMap,contentHandler,lexHandler,errorHandler){
 		start = end
 	}
 	var elStack = [{currentNSMap:{}}]
+	var closeMap = {};
 	var start = 0;
 	while(true){
 		var i = source.indexOf('<',start);
@@ -64,7 +65,7 @@ function parse(source,entityMap,contentHandler,lexHandler,errorHandler){
 				}
 				return;
 			}else{
-				var end = parseElementAttribute(source,i,entityReplacer,contentHandler,elStack);
+				var end = parseElementAttribute(source,i,entityReplacer,contentHandler,closeMap,elStack);
 			}
 
 		}
@@ -75,7 +76,7 @@ function parse(source,entityMap,contentHandler,lexHandler,errorHandler){
 		}
 	}
 }
-function parseElementAttribute(source,start,entityReplacer,contentHandler,elStack){
+function parseElementAttribute(source,start,entityReplacer,contentHandler,closeMap,elStack){
 	var el = new ElementAttributes();
 	var tagName;
 	var attrName;
@@ -139,7 +140,7 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,elStac
 				
 			}
 			el.length = index;
-			appendElement(contentHandler,elStack,el,tagName,selfClosed);
+			appendElement(contentHandler,elStack,el,tagName,selfClosed||fixSelfClosed(closeMap,source,tagName,p));
 			//console.dir(el)
 			return p+1;
 		/*xml space '\x20' | #x9 | #xD | #xA; */
@@ -182,7 +183,15 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,elStac
 		p++;
 	}
 }
-
+function fixSelfClosed(closeMap,source,tagName,p){
+	//if(tagName in closeMap){
+	var pos = closeMap[tagName];
+	if(pos == null){
+		pos = closeMap[tagName] = source.lastIndexOf('</'+tagName+'>',p)
+	}
+	return pos>p;
+	//} 
+}
 function appendElement(contentHandler,elStack,el,tagName,selfClosed){
 	var localNSMap = null;
 	var currentNSMap = elStack[elStack.length-1].currentNSMap;

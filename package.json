@@ -47,7 +47,7 @@
     "dependencies": {
     },
     "devDependencies" : {
-      "wows" : "*"
+      "vows" : "*"
     },
     "engines" : { "node" : ">=0.1" },
     "directories": {

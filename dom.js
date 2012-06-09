@@ -910,9 +910,14 @@ function serializeToString(node,buf){
 		}
 		if(child){
 			buf.push('>');
-			while(child){
-				serializeToString(child,buf);
-				child = child.nextSibling;
+			//if is cdata child node
+			if(/^script$/i.test(nodeName)){
+				buf.push(child.data);
+			}else{
+				while(child){
+					serializeToString(child,buf);
+					child = child.nextSibling;
+				}
 			}
 			buf.push('</',nodeName,'>');
 		}else{
@@ -1054,58 +1059,61 @@ function __set__(object,key,value){
 	object[key] = value
 }
 //do dynamic
-if(Object.defineProperty){
-	__set__ = function(object,key,value){
-		//console.log(value)
-		object['$$'+key] = value
-	}
-	Object.defineProperty(LiveNodeList.prototype,'length',{
-		get:function(){
-			_updateLiveList(this);
-			return this.$$length;
-		}
-	});
-	Object.defineProperty(Node.prototype,'textContent',{
-		get:function(){
-			return getTextContent(this);
-		},
-		set:function(data){
-			switch(this.nodeType){
+try{
+	if(Object.defineProperty){
+		Object.defineProperty(LiveNodeList.prototype,'length',{
+			get:function(){
+				_updateLiveList(this);
+				return this.$$length;
+			}
+		});
+		Object.defineProperty(Node.prototype,'textContent',{
+			get:function(){
+				return getTextContent(this);
+			},
+			set:function(data){
+				switch(this.nodeType){
+				case 1:
+				case 11:
+					var c = node.firstChild;
+					while(c){
+						node.removeChild(c)
+						c = c.nextSibling;
+					}
+					return ;
+				default:
+					//TODO:
+					this.data = data;
+					this.value = value;
+					this.nodeValue = data;
+				}
+			}
+		})
+		
+		function getTextContent(node){
+			switch(node.nodeType){
 			case 1:
 			case 11:
-				var c = node.firstChild;
-				while(c){
-					node.removeChild(c)
-					c = c.nextSibling;
+				var buf = [];
+				node = node.firstChild;
+				while(node){
+					if(node.nodeType!==7 && node.nodeType !==8){
+						buf.push(getTextContent(node));
+					}
+					node = node.nextSibling;
 				}
-				return ;
+				return buf.join('');
 			default:
-				//TODO:
-				this.data = data;
-				this.value = value;
-				this.nodeValue = data;
+				return node.nodeValue;
 			}
 		}
-	})
-	function getTextContent(node){
-		switch(node.nodeType){
-		case 1:
-		case 11:
-			var buf = [];
-			node = node.firstChild;
-			while(node){
-				if(node.nodeType!==7 && node.nodeType !==8){
-					buf.push(getTextContent(node));
-				}
-				node = node.nextSibling;
-			}
-			return buf.join('');
-		default:
-			return node.nodeValue;
+		__set__ = function(object,key,value){
+			//console.log(value)
+			object['$$'+key] = value
 		}
 	}
+}catch(e){//ie8
 }
-
 
 if(typeof require == 'function'){
 	exports.DOMImplementation = DOMImplementation;

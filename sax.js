@@ -1,6 +1,13 @@
 //var handlers = 'resolveEntity,getExternalSubset,characters,endDocument,endElement,endPrefixMapping,ignorableWhitespace,processingInstruction,setDocumentLocator,skippedEntity,startDocument,startElement,startPrefixMapping,notationDecl,unparsedEntityDecl,error,fatalError,warning,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,comment,endCDATA,endDTD,endEntity,startCDATA,startDTD,startEntity'.split(',')
 function XMLReader(){
 }
+//[4]   	NameStartChar	   ::=   	":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
+//[4a]   	NameChar	   ::=   	NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
+//[5]   	Name	   ::=   	NameStartChar (NameChar)*
+var nameStartChar = /[A-Z_a-z\xC0-\xD6\xD8-\xF6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u10000-\uEFFFF]/
+var nameChar = new RegExp("[\-\.0-9"+nameStartChar.source.slice(1,-1)+"\u00B7\u0300-\u036F\ux203F-\u2040]");
+var standardName = new RegExp('^'+nameStartChar.source+nameChar.source+'*(?:\:'+nameStartChar.source+nameChar.source+'*)?$');
+var tagNamePattern = standardName || /^[a-zA-Z_][\w\-\.]*(?:\:[a-zA-Z_][\w\-\.]*)?$/
 
 XMLReader.prototype = {
 	parse:function(source){
@@ -29,6 +36,7 @@ function parse(source,entityMap,contentHandler,lexHandler,errorHandler){
 		contentHandler.characters(xt,0,end-start);
 		start = end
 	}
+	
 	var elStack = [{currentNSMap:{}}]
 	var closeMap = {};
 	var start = 0;
@@ -65,7 +73,11 @@ function parse(source,entityMap,contentHandler,lexHandler,errorHandler){
 				}
 				return;
 			}else{
-				var end = parseElementAttribute(source,i,entityReplacer,contentHandler,closeMap,elStack);
+				try{
+					var end = parseElementAttribute(source,i,entityReplacer,contentHandler,lexHandler,closeMap,elStack);
+				}catch(e){
+					end = -1;
+				}
 			}
 
 		}
@@ -76,7 +88,30 @@ function parse(source,entityMap,contentHandler,lexHandler,errorHandler){
 		}
 	}
 }
-function parseElementAttribute(source,start,entityReplacer,contentHandler,closeMap,elStack){
+function parseSpecialContent(tagName,source,p,entityReplacer,contentHandler,lexHandler){
+	if(/^(?:script|textarea)$/i.test(tagName)){
+		var end =  source.indexOf('</'+tagName+'>',p);
+		var text = source.substring(p+1,end);
+		if(/[&<]/.test(text)){
+			//console.log('######',tagName,end,text)
+			if(/^script$/i.test(tagName)){
+				//if(!/\]\]>/.test(text)){
+					//lexHandler.startCDATA();
+					contentHandler.characters(text,0,text.length);
+					//lexHandler.endCDATA();
+					return end;
+				//}
+			}//}else{//text area
+				text = text.replace(/&#?\w+;/g,entityReplacer);
+				contentHandler.characters(text,0,text.length);
+				return end;
+			//}
+			
+		}
+	}
+}
+
+function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHandler,closeMap,elStack){
 	var el = new ElementAttributes();
 	var tagName;
 	var attrName;
@@ -106,6 +141,9 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,closeM
 		case '=':
 			if(s === 2){//attrName
 				attrName = source.slice(start,p);
+				if(!tagNamePattern.test(attrName)){
+					return -1;
+				}
 				s = 4;
 			}else if(s === 3){
 				s = 4;
@@ -127,22 +165,21 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,closeM
 				if(attrName.slice(-1) === '/'){
 					selfClosed = true;
 					attrName = attrName.slice(0,-1)
-					if(attrName){
-						if(s){
-							el[index++] = {qName:attrName,value:attrName}
-						}else{
-							tagName  = attrName;
-						}
+				}
+				if(attrName){
+					if(s){//only s == 2
+						el[index++] = {qName:attrName,value:attrName}
+					}else{
+						tagName  = attrName;
 					}
-				}else if(s===0){
-					tagName = attrName
 				}
 				
 			}
+//			console.log(tagName,tagNamePattern,tagNamePattern.test(tagName))
 			el.length = index;
-			appendElement(contentHandler,elStack,el,tagName,selfClosed||fixSelfClosed(closeMap,source,tagName,p));
-			//console.dir(el)
-			return p+1;
+			selfClosed = selfClosed||fixSelfClosed(closeMap,source,tagName,p)
+			appendElement(contentHandler,elStack,el,tagName,selfClosed);
+			return selfClosed ?p+1: parseSpecialContent(tagName,source,p,entityReplacer,contentHandler,lexHandler) || p+1;
 		/*xml space '\x20' | #x9 | #xD | #xA; */
 		case '\u0080':
 			c = ' ';
@@ -196,11 +233,21 @@ function appendElement(contentHandler,elStack,el,tagName,selfClosed){
 	var localNSMap = null;
 	var currentNSMap = elStack[elStack.length-1].currentNSMap;
 	var i = el.length;
+	
+	if(!tagNamePattern.test(tagName)){
+		console.error('invalid tagName:',tagName)
+		throw new Error();
+	}
 	while(i--){
 		var a = el[i];
 		var qName = a.qName;
 		var value = a.value;
 		var nsp = qName.indexOf(':');
+		
+		if(!tagNamePattern.test(qName)){
+			console.error('invalid attribute:',qName)
+			throw new Error();
+		}
 		if(nsp>0){
 			var prefix = a.prefix = qName.slice(0,nsp);
 			var localName = qName.slice(nsp+1);
@@ -264,14 +311,14 @@ function appendElement(contentHandler,elStack,el,tagName,selfClosed){
 	}
 }
 
-function parseDCC(source,start,contentHandler,lex){//sure start with '<!'
+function parseDCC(source,start,contentHandler,lexHandler){//sure start with '<!'
 	var next= source.charAt(start+2)
 	switch(next){
 	case '-':
 		if(source.charAt(start + 3) === '-'){
 			var end = source.indexOf('-->',start+4);
 			//append comment source.substring(4,end)//<!--
-			lex && lex.comment(source,start+4,end-start-4);
+			lexHandler.comment(source,start+4,end-start-4);
 			return end+3;
 		}else{
 			//error
@@ -280,9 +327,9 @@ function parseDCC(source,start,contentHandler,lex){//sure start with '<!'
 	case '[':
 		if(source.substr(start+3,6) == 'CDATA['){
 			var end = source.indexOf(']]>',start+9);
-			lex && lex.startCDATA();
+			lexHandler.startCDATA();
 			contentHandler.characters(source,start+9,end-start-9);
-			lex && lex.endCDATA() 
+			lexHandler.endCDATA() 
 			return end+3;
 		}
 		//<!DOCTYPE
@@ -294,8 +341,8 @@ function parseDCC(source,start,contentHandler,lex){//sure start with '<!'
 			var pubid = len>3 && /^public$/i.test(matchs[2][0]) && matchs[3][0]
 			var sysid = len>4 && matchs[4][0];
 			var lastMatch = matchs[len-1]
-			lex && lex.startDTD(name,pubid,sysid);
-			lex && lex.endDTD();
+			lexHandler.startDTD(name,pubid,sysid);
+			lexHandler.endDTD();
 			
 			return lastMatch.index+lastMatch[0].length
 		}

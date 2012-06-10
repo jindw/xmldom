@@ -20,8 +20,7 @@ function format(s){
 	}
 	return result;
 }
-DOMParser.prototype.parseFromString = function(data){
-	var doc = oldParser.apply(this,arguments);
+function check(data,doc){
 	var domjsresult = format(data);
 	var xmldomresult = new XMLSerializer().serializeToString(doc);
 	var xmldomresult2 = new XMLSerializer().serializeToString(doc.cloneNode(true));
@@ -30,6 +29,12 @@ DOMParser.prototype.parseFromString = function(data){
 	domjsresult = domjsresult.replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
 	//console.log('['+xmldomresult+'],['+domjsresult+']')
 	assert.equal(xmldomresult,domjsresult);
+}
+DOMParser.prototype.parseFromString = function(data,mimeType){
+	var doc = oldParser.apply(this,arguments);
+	if(!/\/x?html?\b/.test(mimeType)){
+		check(data,doc);
+	}
 	return doc;
 }
 
@@ -37,4 +42,6 @@ require('./dom');
 require('./parse-element');
 require('./node');
 require('./namespace');
+require('./html/parse');
+require('./html/normalize');
 //require('./big-file-performance');

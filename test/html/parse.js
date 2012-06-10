@@ -7,13 +7,11 @@ var parser = new DOMParser();
 wows.describe('html Node Parse').addBatch({
     'node': function () { 
     	var dom = new DOMParser().parseFromString('<html xmlns:x="1"><body/></html>','text/html');
-    	console.log(dom+'',dom.documentElement.firstChild+'')
-    	console.assert(dom == '<html xmlns:x="1"><body/></html>',dom+'')
+    	console.assert(dom == '<html xmlns:x="1"><body></body></html>',dom+'')
 	},
     'attr': function () { 
     	var dom = new DOMParser().parseFromString('<html test="a<b && a>b && \'&amp;&&\'"/>','text/html');
-    	console.log(dom+'')
-    	console.assert(dom == '<html test="a&lt;b &amp;&amp; a>b &amp;&amp; \'&amp;&amp;&amp;\'"/>',dom+'')
+    	console.assert(dom == '<html test="a&lt;b &amp;&amp; a>b &amp;&amp; \'&amp;&amp;&amp;\'"></html>',dom+'')
 	},
     'script': function () { 
     	var dom = new DOMParser().parseFromString('<script>alert(a<b&&c?"<br>":">>");</script>','text/html');

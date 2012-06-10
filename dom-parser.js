@@ -1,14 +1,20 @@
 function DOMParser(){
 	
 }
-DOMParser.prototype.parseFromString = function(source){
+DOMParser.prototype.parseFromString = function(source,mimeType){
 	var sax =  new XMLReader();
 	var handler = new DOMHandler();
+	var defaultNSMap = {};
+	var entityMap = {'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"}
 	sax.contentHandler = handler;
 	sax.lexicalHandler = handler;
 	sax.errorHandler = handler;
-	
-	sax.parse(source);
+	if(/\/x?html?$/.test(mimeType)){
+		entityMap.nbsp = '\xa0';
+		entityMap.copy = '\xa9';
+		defaultNSMap['']= 'http://www.w3.org/1999/xhtml';
+	}
+	sax.parse(source,defaultNSMap,entityMap);
 	return handler.document;
 }
 /**

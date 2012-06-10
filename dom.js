@@ -34,6 +34,7 @@ function _extends(Class,Super){
 		pt.constructor = Class
 	}
 }
+var htmlns = 'http://www.w3.org/1999/xhtml' ;
 // Node Types
 var NodeType = {}
 var ELEMENT_NODE                = NodeType.ELEMENT_NODE                = 1;
@@ -48,7 +49,6 @@ var DOCUMENT_NODE               = NodeType.DOCUMENT_NODE               = 9;
 var DOCUMENT_TYPE_NODE          = NodeType.DOCUMENT_TYPE_NODE          = 10;
 var DOCUMENT_FRAGMENT_NODE      = NodeType.DOCUMENT_FRAGMENT_NODE      = 11;
 var NOTATION_NODE               = NodeType.NOTATION_NODE               = 12;
-
 
 // ExceptionCode
 var ExceptionCode = {}
@@ -904,14 +904,15 @@ function serializeToString(node,buf){
 		var len = attrs.length;
 		var child = node.firstChild;
 		var nodeName = node.tagName;
+		var isHTML = htmlns === node.namespaceURI
 		buf.push('<',nodeName);
 		for(var i=0;i<len;i++){
-			serializeToString(attrs.item(i),buf);
+			serializeToString(attrs.item(i),buf,isHTML);
 		}
-		if(child){
+		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
 			buf.push('>');
 			//if is cdata child node
-			if(/^script$/i.test(nodeName)){
+			if(isHTML && /^script$/i.test(nodeName)){
 				buf.push(child.data);
 			}else{
 				while(child){

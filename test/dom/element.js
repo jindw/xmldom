@@ -35,9 +35,9 @@ wows.describe('XML Namespace Parse').addBatch({
        
        
        
-var feed = new DOMParser().parseFromString('<feed><entry>foo</entry></feed>');
-var entries = feed.documentElement.getElementsByTagName('entry');
-console.log(entries[0].nodeName);
+		var feed = new DOMParser().parseFromString('<feed><entry>foo</entry></feed>');
+		var entries = feed.documentElement.getElementsByTagName('entry');
+		console.log(entries[0].nodeName);
        console.log(feed.documentElement.childNodes.item(0).nodeName);
     },
     'getElementsByTagNameNS': function () { 

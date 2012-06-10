@@ -16,9 +16,14 @@ wows.describe('html normalizer').addBatch({
     	console.assert(dom == '<div>\u00a0\u00a9&amp;nbsp&amp;copy</div>',dom+'')
     	
     	
+    	var dom = new DOMParser().parseFromString('<html xmlns:x="1"><body/></html>','text/html');
+    	console.assert(dom == '<html xmlns:x="1"><body></body></html>',dom+'')
 	},
     'attr': function () { 
-    	var dom = new DOMParser().parseFromString('<div test="alert(\'<br/>\')"/>','text/html');
+    	var dom = new DOMParser().parseFromString('<html test="a<b && a>b && \'&amp;&&\'"/>','text/html');
+    	console.assert(dom == '<html test="a&lt;b &amp;&amp; a>b &amp;&amp; \'&amp;&amp;&amp;\'"></html>',dom+'')
+		
+		var dom = new DOMParser().parseFromString('<div test="alert(\'<br/>\')"/>','text/html');
     	console.assert(dom == '<div test="alert(\'&lt;br/>\')"></div>',dom+'')
     	var dom = new DOMParser().parseFromString('<div test="a<b&&a< c && a>d"></div>','text/html');
     	console.assert(dom == '<div test="a&lt;b&amp;&amp;a&lt; c &amp;&amp; a>d"></div>',dom+'')
@@ -55,11 +60,20 @@ wows.describe('html normalizer').addBatch({
     'script': function () { 
     	var dom = new DOMParser().parseFromString('<script>alert(a<b&&c?"<br>":">>");</script>','text/html');
     	console.assert(dom == '<script>alert(a<b&&c?"<br>":">>");</script>',dom+'')
+    	
+    	var dom = new DOMParser().parseFromString('<script>alert(a<b&&c?"<br>":">>");</script>','text/xml');
+    	console.assert(dom == '<script>alert(a&lt;b&amp;&amp;c?"<br/>":">>");</script>',dom+'')
+    	
     	var dom = new DOMParser().parseFromString('<script>alert(a<b&&c?"<br/>":">>");</script>','text/html');
     	console.assert(dom == '<script>alert(a<b&&c?"<br/>":">>");</script>',dom+'')
+
 	},
     'textarea': function () { 
     	var dom = new DOMParser().parseFromString('<textarea>alert(a<b&&c?"<br>":">>");</textarea>','text/html');
     	console.assert(dom == '<textarea>alert(a&lt;b&amp;&amp;c?"&lt;br>":">>");</textarea>',dom+'')
+    	
+    	
+    	var dom = new DOMParser().parseFromString('<textarea>alert(a<b&&c?"<br>":">>");</textarea>','text/xml');
+    	console.assert(dom == '<textarea>alert(a&lt;b&amp;&amp;c?"<br/>":">>");</textarea>',dom+'')
 	}
 }).run();

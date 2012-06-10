@@ -33,7 +33,9 @@ function check(data,doc){
 DOMParser.prototype.parseFromString = function(data,mimeType){
 	var doc = oldParser.apply(this,arguments);
 	if(!/\/x?html?\b/.test(mimeType)){
+		try{
 		check(data,doc);
+		}catch(e){console.dir(e)}
 	}
 	return doc;
 }
@@ -42,6 +44,5 @@ require('./dom');
 require('./parse-element');
 require('./node');
 require('./namespace');
-require('./html/parse');
 require('./html/normalize');
 //require('./big-file-performance');

@@ -500,7 +500,7 @@ function _insertBefore(parentNode,newChild,nextChild){
 		cp.removeChild(newChild);//remove and update
 	}
 	if(newChild.nodeType === DOCUMENT_FRAGMENT_NODE){
-		var newFirst = newChild.firstNode;
+		var newFirst = newChild.firstChild;
 		var newLast = newChild.lastChild;
 	}else{
 		newFirst = newLast = newChild;
@@ -518,12 +518,18 @@ function _insertBefore(parentNode,newChild,nextChild){
 	}
 	if(nextChild == null){
 		parentNode.lastChild = newLast;
+	}else{
+		nextChild.previousSibling = newLast;
 	}
 	do{
 		newFirst.parentNode = parentNode;
 	}while(newFirst !== newLast && (newFirst= newFirst.nextSibling))
 	_onUpdateChild(parentNode.ownerDocument||parentNode,parentNode);
 	//console.log(parentNode.lastChild.nextSibling == null)
+	if (newChild.nodeType == DOCUMENT_FRAGMENT_NODE) {
+		newChild.firstChild = newChild.lastChild = null;
+	}
+	return newChild;
 }
 function _appendSingleChild(parentNode,newChild){
 	var cp = newChild.parentNode;
@@ -543,6 +549,7 @@ function _appendSingleChild(parentNode,newChild){
 	}
 	parentNode.lastChild = newChild;
 	_onUpdateChild(parentNode.ownerDocument,parentNode,newChild);
+	return newChild;
 	//console.log("__aa",parentNode.lastChild.nextSibling == null)
 }
 Document.prototype = {
@@ -808,7 +815,7 @@ CharacterData.prototype = {
 		//if(!(newChild instanceof CharacterData)){
 			throw new Error(ExceptionMessage[3])
 		//}
-		Node.prototype.appendChild.apply(this,arguments)
+		return Node.prototype.appendChild.apply(this,arguments)
 	},
 	deleteData: function(offset, count) {
 		this.replaceData(offset,count,"");
@@ -881,6 +888,7 @@ _extends(EntityReference,Node);
 function DocumentFragment() {
 };
 DocumentFragment.prototype.nodeName =	"#document-fragment";
+DocumentFragment.prototype.nodeType =	DOCUMENT_FRAGMENT_NODE;
 _extends(DocumentFragment,Node);
 
 

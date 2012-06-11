@@ -42,6 +42,43 @@ wows.describe('XML Node Parse').addBatch({
     	console.assert ( root.firstChild.nextSibling.nodeValue =='<encoded>');
     	console.assert ( root.firstChild.nextSibling.nextSibling.nextSibling.nodeValue ==' comment ');
     	console.assert ( root.firstChild.nextSibling.nextSibling.nextSibling.nextSibling.nodeValue =='end');
+    },
+    'append node': function () {
+    	var dom = new DOMParser().parseFromString('<xml/>');
+    	var child = dom.createElement("child");
+    	console.assert ( child == dom.documentElement.appendChild(child));
+    	console.assert ( child == dom.documentElement.firstChild);
+    	var fragment = new dom.createDocumentFragment();
+    	console.assert ( child == fragment.appendChild(child));
+    },
+    'insert node': function () {
+    	var dom = new DOMParser().parseFromString('<xml><child/></xml>');
+    	var node = dom.createElement("sibling");
+    	var child = dom.documentElement.firstChild;
+    	child.parentNode.insertBefore(node, child);
+    	console.assert ( node == child.previousSibling);
+    	console.assert ( node.nextSibling == child);
+    	console.assert ( node.parentNode == child.parentNode);
+    },
+    'insert fragment': function () {
+    	var dom = new DOMParser().parseFromString('<xml><child/></xml>');
+    	var fragment = dom.createDocumentFragment();
+    	assert(fragment.nodeType === 11);
+    	var first = fragment.appendChild(dom.createElement("first"));
+    	var last = fragment.appendChild(dom.createElement("last"));
+    	console.assert ( fragment.firstChild == first);
+    	console.assert ( fragment.lastChild == last);
+    	console.assert ( last.previousSibling == first);
+    	console.assert ( first.nextSibling == last);
+    	var child = dom.documentElement.firstChild;
+    	child.parentNode.insertBefore(fragment, child);
+    	console.assert ( last.previousSibling == first);
+    	console.assert ( first.nextSibling == last);
+    	console.assert ( child.parentNode.firstChild == first);
+    	console.assert ( last == child.previousSibling);
+    	console.assert ( last.nextSibling == child);
+    	console.assert ( first.parentNode == child.parentNode);
+    	console.assert ( last.parentNode == child.parentNode);
     }
 }).addBatch({
 	"instruction":function(){

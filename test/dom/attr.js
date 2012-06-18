@@ -31,6 +31,10 @@ wows.describe('XML attrs').addBatch({
 //    	root.firstChild.setAttributeNode(root.attributes[0]);
 //    	console.assert(root.attributes.length == 0);
     },
+    "attribute namespace":function(){
+    	var root = new DOMParser().parseFromString("<xml xmlns:a='a' xmlns:b='b' a:b='e'></xml>",'text/xml').documentElement;
+    	console.assert(root.getAttributeNS("a", "b"), "e");
+    },
     "override ns attribute":function(){
     	
     },

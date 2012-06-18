@@ -13,7 +13,7 @@ wows.describe('XML Namespace Parse').addBatch({
        console.assert(root.firstChild.getAttributeNode('attr').namespaceURI==null)
     },
     'prefix namespace': function () { 
-       var dom = new DOMParser().parseFromString('<xml xmlns:p1="http://p1.com" xmlns:p2="http://p2.com"><p1:child p1:attr="1"/><p2:child/></xml>','text/xml');
+       var dom = new DOMParser().parseFromString('<xml xmlns:p1="http://p1.com" xmlns:p2="http://p2.com"><p1:child a="1" p1:attr="1" b="2"/><p2:child/></xml>','text/xml');
        var root = dom.documentElement;
        console.assert(root.firstChild.namespaceURI == 'http://p1.com')
        console.assert(root.lookupNamespaceURI('p1') == 'http://p1.com')

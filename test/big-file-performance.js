@@ -46,6 +46,22 @@ function domjs(data){
 	}
 	return doc
 }
+function addAttributes(el){
+	var c =parseInt(Math.random()*10);
+	while(c--){
+		el.setAttribute('dynamic-attr'+c,c+new Array(c).join('.'));
+	}
+	var child = el.firstChild;
+	while(child){
+		if(child.nodeType == 1){
+			addAttributes(child)
+		}else if(child.nodeType == 4){//cdata
+			el.insertBefore(el.ownerDocument.createTextNode(child.data),child);
+			el.removeChild(child);
+		}
+		child = child.nextSibling;
+	}
+}
 // Create a Test Suite
 wows.describe('XML Node Parse').addBatch({
     "big file parse":function(){
@@ -59,18 +75,39 @@ wows.describe('XML Node Parse').addBatch({
 		var doc3 = libxml(data);
 		
 		
-		xmldomresult = (doc1+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
+		
+		addAttributes(doc1.documentElement);
+		
+		data = doc1.toString();
+		
+		var doc1 = xmldom(data);
+		var doc2 = domjs(data);
+		var doc3 = libxml(data);
+		
+		xmldomresult = (domjs(doc1+'')+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
 		domjsresult = (doc2+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
 		
 		
-//		var begin = 0;
-//		var end = 5
-//		xmldomresult = xmldomresult.substring(begin,end)
-//		domjsresult = domjsresult.substring(begin,end)
-//		console.log(xmldomresult,domjsresult)
+		//console.log(xmldomresult,domjsresult)
 		
 		//assert.equal(xmldomresult,domjsresult);
 		//,xmldomresult,domjsresult)
-		console.assert(xmldomresult == domjsresult,xmldomresult,domjsresult)
+		if(xmldomresult !== domjsresult){
+			for(var i=0;i<xmldomresult.length;i++){
+				if(xmldomresult.charAt(i)!=domjsresult.charAt(i)){
+					console.log(xmldomresult.charAt(i))
+					var begin = i-50;
+					var len = 100;
+					xmldomresult = xmldomresult.substr(begin,len)
+					domjsresult = domjsresult.substr(begin,len)
+					//console.log(xmldomresult.length,domjsresult.length)
+					console.log('pos'+i,'\n',xmldomresult,'\n\n\n\n',domjsresult)
+					console.assert(xmldomresult == domjsresult)
+					break;
+				}
+			} 
+			
+		}
+		//console.assert(xmldomresult == domjsresult,xmldomresult.length,i)
     }
 }).run(); // Run it

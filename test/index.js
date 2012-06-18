@@ -28,7 +28,10 @@ function check(data,doc){
 	xmldomresult = xmldomresult.replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
 	domjsresult = domjsresult.replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
 	//console.log('['+xmldomresult+'],['+domjsresult+']')
-	assert.equal(xmldomresult,domjsresult);
+	if(xmldomresult!=domjsresult){
+		assert.equal(format(xmldomresult),domjsresult);
+	}
+	
 }
 DOMParser.prototype.parseFromString = function(data,mimeType){
 	var doc = oldParser.apply(this,arguments);

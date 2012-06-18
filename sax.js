@@ -278,6 +278,7 @@ function appendElement(contentHandler,elStack,el,tagName,selfClosed){
 	}
 	var i = el.length;
 	while(i--){
+		a = el[i];
 		var prefix = a.prefix;
 		if(prefix){//no prefix attribute has no namespace
 			if(prefix === 'xml'){

@@ -200,7 +200,7 @@ NamedNodeMap.prototype = {
 	setNamedItem: function(attr) {
 		var el = attr.ownerElement;
 		if(el && el!=this._ownerElement){
-			el.removeAttributeNode(attr);
+			throw new DOMException(INUSE_ATTRIBUTE_ERR);
 		}
 		var oldAttr = this.getNamedItem(attr.nodeName);
 		_addNamedNode(this._ownerElement,this,attr,oldAttr);
@@ -210,7 +210,7 @@ NamedNodeMap.prototype = {
 	setNamedItemNS: function(attr) {// raises: WRONG_DOCUMENT_ERR,NO_MODIFICATION_ALLOWED_ERR,INUSE_ATTRIBUTE_ERR
 		var el = attr.ownerElement, oldAttr;
 		if(el && el!=this._ownerElement){
-			el.removeAttributeNode(attr);
+			throw new DOMException(INUSE_ATTRIBUTE_ERR);
 		}
 		oldAttr = this.getNamedItemNS(attr.namespaceURI,attr.localName);
 		_addNamedNode(this._ownerElement,this,attr,oldAttr);

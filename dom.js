@@ -208,7 +208,7 @@ NamedNodeMap.prototype = {
 	},
 	/* returns Node */
 	setNamedItemNS: function(attr) {// raises: WRONG_DOCUMENT_ERR,NO_MODIFICATION_ALLOWED_ERR,INUSE_ATTRIBUTE_ERR
-		var el = attr.ownerElement;
+		var el = attr.ownerElement, oldAttr;
 		if(el && el!=this._ownerElement){
 			el.removeAttributeNode(attr);
 		}

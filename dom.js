@@ -646,6 +646,7 @@ Document.prototype = {
 		node.ownerDocument	= this;
 		node.name = name;
 		node.nodeName	= name;
+		node.localName = name;
 		node.specified = true;
 		return node;
 	},

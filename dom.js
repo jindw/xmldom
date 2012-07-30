@@ -919,7 +919,9 @@ function serializeToString(node,buf){
 			buf.push('>');
 			//if is cdata child node
 			if(isHTML && /^script$/i.test(nodeName)){
-				buf.push(child.data);
+				if(child){
+					buf.push(child.data);
+				}
 			}else{
 				while(child){
 					serializeToString(child,buf);

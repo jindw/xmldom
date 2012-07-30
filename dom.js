@@ -560,8 +560,9 @@ Document.prototype = {
 		if(newChild.nodeType == DOCUMENT_FRAGMENT_NODE){
 			var child = newChild.firstChild;
 			while(child){
-				this.insertBefore(newChild,refChild);
-				child = child.nextSibling;
+				var next = child.nextSibling;
+				this.insertBefore(child,refChild);
+				child = next;
 			}
 			return newChild;
 		}

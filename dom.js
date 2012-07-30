@@ -342,7 +342,6 @@ Node.prototype = {
 	// Modified in DOM Level 2:
 	normalize:function(){
 		var child = this.firstChild;
-		var i = 0;
 		while(child){
 			var next = child.nextSibling;
 			if(next && next.nodeType == TEXT_NODE && child.nodeType == TEXT_NODE){
@@ -351,9 +350,6 @@ Node.prototype = {
 			}else{
 				child.normalize();
 				child = next;
-			}
-			if(1000 == i++){
-				console.log(this.lastChild .nextSibling==null)
 			}
 		}
 	},
@@ -564,8 +560,9 @@ Document.prototype = {
 		if(newChild.nodeType == DOCUMENT_FRAGMENT_NODE){
 			var child = newChild.firstChild;
 			while(child){
-				this.insertBefore(newChild,refChild);
-				child = child.nextSibling;
+				var next = child.nextSibling;
+				this.insertBefore(child,refChild);
+				child = next;
 			}
 			return newChild;
 		}

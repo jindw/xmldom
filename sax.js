@@ -13,14 +13,19 @@ function XMLReader(){
 XMLReader.prototype = {
 	parse:function(source,defaultNSMap,entityMap){
 		var contentHandler = this.contentHandler;
+		var locator;
+		if(this.recordPositions){
+			locator = new DOMLocator(source);
+			contentHandler.setDocumentLocator(locator);
+		}
 		contentHandler.startDocument();
 		_copy(defaultNSMap ,defaultNSMap = {})
 		parse(source,defaultNSMap,entityMap,
-				contentHandler,this.lexicalHandler,this.errorHandler);
+				contentHandler,this.lexicalHandler,this.errorHandler,locator);
 		contentHandler.endDocument();
 	}
 }
-function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,errorHandler){
+function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,errorHandler,locator){
 	function entityReplacer(a){
 		var k = a.slice(1,-1);
 		if(k in entityMap){
@@ -33,6 +38,7 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 		}
 	}
 	function appendText(end){
+		updateLocator(locator, end);
 		var xt = source.substring(start,end).replace(/&#?\w+;/g,entityReplacer);
 		contentHandler.characters(xt,0,end-start);
 		start = end
@@ -51,6 +57,7 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 			var tagName = source.substring(i+2,end);
 			var config = elStack.pop();
 			var localNSMap = config.localNSMap;
+			updateLocator(locator, end + 1);
 			contentHandler.endElement(config.uri,config.localName,tagName);
 			if(localNSMap){
 				for(var prefix in localNSMap){
@@ -61,10 +68,10 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 			break;
 			// end elment
 		case '?':// <?...?>
-			end = parseInstruction(source,i,lexHandler);
+			end = parseInstruction(source,i,lexHandler,locator);
 			break;
 		case '!':// <!doctype,<![CDATA,<!--
-			end = parseDCC(source,i,contentHandler,lexHandler);
+			end = parseDCC(source,i,contentHandler,lexHandler,locator);
 			break;
 		default:
 			if(i<0){
@@ -74,7 +81,7 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 				return;
 			}else{
 				try{
-					var end = parseElementAttribute(source,i,entityReplacer,contentHandler,lexHandler,closeMap,elStack);
+					var end = parseElementAttribute(source,i,entityReplacer,contentHandler,lexHandler,locator,closeMap,elStack);
 				}catch(e){
 					end = -1;
 				}
@@ -88,13 +95,14 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 		}
 	}
 }
-function parseSpecialContent(el,source,p,entityReplacer,contentHandler,lexHandler){
+function parseSpecialContent(el,source,p,entityReplacer,contentHandler,lexHandler,locator){
 	var ns = el.uri;
 	var tagName = el.tagName;
 	if(ns === 'http://www.w3.org/1999/xhtml' &&/^(?:script|textarea)$/i.test(tagName)){
 		var end =  source.indexOf('</'+tagName+'>',p);
 		var text = source.substring(p+1,end);
 		if(/[&<]/.test(text)){
+			updateLocator(locator, end);
 			if(/^script$/i.test(tagName)){
 				//if(!/\]\]>/.test(text)){
 					//lexHandler.startCDATA();
@@ -112,7 +120,7 @@ function parseSpecialContent(el,source,p,entityReplacer,contentHandler,lexHandle
 	}
 }
 
-function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHandler,closeMap,elStack){
+function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHandler,locator,closeMap,elStack){
 	var el = new ElementAttributes();
 	var tagName;
 	var attrName;
@@ -183,8 +191,9 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHan
 //			console.log(tagName,tagNamePattern,tagNamePattern.test(tagName))
 			el.length = index;
 			selfClosed = selfClosed||fixSelfClosed(closeMap,source,tagName,p)
+			updateLocator(locator, p + 1);
 			appendElement(contentHandler,elStack,el,tagName,selfClosed);
-			return selfClosed ?p+1: parseSpecialContent(el,source,p,entityReplacer,contentHandler,lexHandler) || p+1;
+			return selfClosed ?p+1: parseSpecialContent(el,source,p,entityReplacer,contentHandler,lexHandler,locator) || p+1;
 		/*xml space '\x20' | #x9 | #xD | #xA; */
 		case '\u0080':
 			c = ' ';
@@ -315,13 +324,14 @@ function appendElement(contentHandler,elStack,el,tagName,selfClosed){
 function _copy(source,target){
 	for(var n in source){target[n] = source[n]}
 }
-function parseDCC(source,start,contentHandler,lexHandler){//sure start with '<!'
+function parseDCC(source,start,contentHandler,lexHandler,locator){//sure start with '<!'
 	var next= source.charAt(start+2)
 	switch(next){
 	case '-':
 		if(source.charAt(start + 3) === '-'){
 			var end = source.indexOf('-->',start+4);
 			//append comment source.substring(4,end)//<!--
+			updateLocator(locator, end + 3);
 			lexHandler.comment(source,start+4,end-start-4);
 			return end+3;
 		}else{
@@ -331,8 +341,11 @@ function parseDCC(source,start,contentHandler,lexHandler){//sure start with '<!'
 	case '[':
 		if(source.substr(start+3,6) == 'CDATA['){
 			var end = source.indexOf(']]>',start+9);
+			updateLocator(locator, start + 9);
 			lexHandler.startCDATA();
+			updateLocator(locator, end);
 			contentHandler.characters(source,start+9,end-start-9);
+			updateLocator(locator, end + 3);
 			lexHandler.endCDATA() 
 			return end+3;
 		}
@@ -356,12 +369,13 @@ function parseDCC(source,start,contentHandler,lexHandler){//sure start with '<!'
 
 
 
-function parseInstruction(source,start,contentHandler){
+function parseInstruction(source,start,contentHandler,locator){
 	var end = source.indexOf('?>',start);
 	if(end){
 		var match = source.substring(start,end).match(/^<\?(\S*)\s*([\s\S]*?)\s*$/);
 		if(match){
 			var len = match[0].length;
+			updateLocator(locator, end + 2);
 			contentHandler.processingInstruction(match[1], match[2]) ;
 			return end+2;
 		}else{//error
@@ -396,6 +410,51 @@ ElementAttributes.prototype = {
 //	getType:function(i){},
 }
 
+function DOMLocator(source) {
+	this.source = source;
+	this.lastOffset = 0;
+	this.lineNumber = 1;
+	this.columnNumber = 1;
+}
+
+DOMLocator.prototype = {
+	getLineNumber: function() {
+		return this.lineNumber;
+	},
+
+	getColumnNumber: function() {
+		return this.columnNumber;
+	},
+
+	getPublicId: function() {
+		return null;
+	},
+
+	getSystemId: function() {
+		return null;
+	}
+};
+
+function updateLocator(locator, offset) {
+	if (!locator) {
+		return;
+	}
+
+	var s = locator.source.substring(locator.lastOffset, offset);
+  var lastChar = locator.source[offset];
+	var i = s.lastIndexOf('\n');
+	if (i == -1) {
+		locator.columnNumber += s.length;
+	} else {
+		for (var j = 0; j <= i; j++) {
+			if (s[j] == '\n') {
+				locator.lineNumber++;
+			}
+		}
+		locator.columnNumber = s.length - i;
+	}
+	locator.lastOffset = offset;
+}
 
 
 

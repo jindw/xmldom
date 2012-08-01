@@ -1,5 +1,5 @@
 function DOMParser(){
-	
+	this.recordPositions = false;
 }
 DOMParser.prototype.parseFromString = function(source,mimeType){
 	var sax =  new XMLReader();
@@ -9,6 +9,8 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	sax.contentHandler = handler;
 	sax.lexicalHandler = handler;
 	sax.errorHandler = handler;
+	sax.recordPositions = this.recordPositions;
+	handler.recordPositions = this.recordPositions;
 	if(/\/x?html?$/.test(mimeType)){
 		entityMap.nbsp = '\xa0';
 		entityMap.copy = '\xa9';
@@ -29,6 +31,9 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 function DOMHandler() {
     this.errors = [];
     this.cdata = false;
+    this.recordPositions = false;
+    this.lastLineNumber = 1;
+    this.lastColumnNumber = 1;
 }
 
 /**
@@ -36,6 +41,16 @@ function DOMHandler() {
  * @link http://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html
  */ 
 DOMHandler.prototype = {
+  recordPosition: function(n) {
+    if (this.recordPositions) {
+      if (n) {
+        n.lineNumber = this.lastLineNumber;
+        n.columnNumber = this.lastColumnNumber;
+      }
+      this.lastLineNumber = this.locator.getLineNumber();
+      this.lastColumnNumber = this.locator.getColumnNumber();
+    }
+  },
 	startDocument : function() {
     	this.document = new DOMImplementation().createDocument(null, null, null);
     	if (this.locator) {
@@ -45,6 +60,7 @@ DOMHandler.prototype = {
 	startElement:function(namespaceURI, localName, qName, attrs) {
 		var doc = this.document;
 	    var el = doc.createElementNS(namespaceURI, qName||localName);
+	    this.recordPosition(el);
 	    var len = attrs.length;
 	    appendElement(this, el);
 	    this.currentElement = el;
@@ -62,27 +78,33 @@ DOMHandler.prototype = {
 	        console.warn("end tag name: "+qName+' is not match the current start tagName:'+tagName);
 	    }
 	    this.currentElement = current.parentNode;
+	  this.recordPosition();
 	},
 	startPrefixMapping:function(prefix, uri) {
 	},
 	endPrefixMapping:function(prefix) {
 	},
 	processingInstruction:function(target, data) {
-	    var ins = this.document.createProcessingInstruction(target, data);
-	    appendElement(this, ins);
+	  var ins = this.document.createProcessingInstruction(target, data);
+	  appendElement(this, ins);
+	  this.recordPosition(ins);
 	},
 	ignorableWhitespace:function(ch, start, length) {
+	  this.recordPosition();
 	},
 	characters:function(chars, start, length) {
 		chars = _toString.apply(this,arguments)
 		if(this.currentElement && chars){
 			if (this.cdata) {
-				var cdataNode = this.document.createCDATASection(chars);
-				this.currentElement.appendChild(cdataNode);
+				var n = this.document.createCDATASection(chars);
+				this.currentElement.appendChild(n);
 			} else {
-				var textNode = this.document.createTextNode(chars);
-				this.currentElement.appendChild(textNode);
+				var n = this.document.createTextNode(chars);
+				this.currentElement.appendChild(n);
 			}
+			this.recordPosition(n);
+		} else {
+			this.recordPosition();
 		}
 	},
 	skippedEntity:function(name) {
@@ -96,16 +118,19 @@ DOMHandler.prototype = {
 	//LexicalHandler
 	comment:function(chars, start, length) {
 		chars = _toString.apply(this,arguments)
-	    var comment = this.document.createComment(chars);
-	    appendElement(this, comment);
+		var comment = this.document.createComment(chars);
+		appendElement(this, comment);
+		this.recordPosition(comment);
 	},
 	
 	startCDATA:function() {
 	    //used in characters() methods
 	    this.cdata = true;
+	    this.recordPosition();
 	},
 	endCDATA:function() {
 	    this.cdata = false;
+	    this.recordPosition();
 	},
 	
 	startDTD:function(name, publicId, systemId) {
@@ -114,6 +139,7 @@ DOMHandler.prototype = {
 	        var dt = impl.createDocumentType(name, publicId, systemId);
 	        appendElement(this, dt);
 	    }
+	  this.recordPosition();
 	},
 	/**
 	 * @see org.xml.sax.ErrorHandler

@@ -6,5 +6,9 @@ wows.describe('XML Serializer').addBatch({
     var doc = new DOMParser().parseFromString('<test/>', 'text/xml');
     doc.documentElement.appendChild(doc.createTextNode('hello ]]> there'));
     console.assert(doc.documentElement.firstChild.toString() == 'hello ]]&gt; there');
-  }
+  },
+  '<script> element with no children': function() {
+    var doc = new DOMParser().parseFromString('<html><script></script></html>', 'text/html');
+    console.assert(doc.documentElement.firstChild.toString() == '<script></script>');
+  },
 }).run();

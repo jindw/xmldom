@@ -1084,12 +1084,13 @@ try{
 				switch(this.nodeType){
 				case 1:
 				case 11:
-					var c = node.firstChild;
-					while(c){
-						node.removeChild(c)
-						c = c.nextSibling;
+					while(this.firstChild){
+						this.removeChild(this.firstChild);
 					}
-					return ;
+          if(String(data)!=''){
+  					this.appendChild(this.ownerDocument.createTextNode(data));
+          }
+					break;
 				default:
 					//TODO:
 					this.data = data;

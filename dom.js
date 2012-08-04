@@ -117,7 +117,7 @@ function LiveNodeList(node,refresh){
 	_updateLiveList(this);
 }
 function _updateLiveList(list){
-	var inc = list._node.ownerDocument._inc;
+	var inc = list._node._inc || list._node.ownerDocument._inc;
 	if(list._inc != inc){
 		var ls = list._refresh(list._node);
 		//console.log(ls.length)
@@ -760,7 +760,7 @@ Element.prototype = {
 	},
 	
 	getElementsByTagName : function(tagName){
-		return new LiveNodeList(this.documentElement || this,function(base){
+		return new LiveNodeList(this,function(base){
 			var ls = [];
 			_visitNode(base,function(node){
 				if(node !== base && node.nodeType == ELEMENT_NODE && (tagName === '*' || node.tagName == tagName)){
@@ -771,7 +771,7 @@ Element.prototype = {
 		});
 	},
 	getElementsByTagNameNS : function(namespaceURI, localName){
-		return new LiveNodeList(this.documentElement || this,function(base){
+		return new LiveNodeList(this,function(base){
 			var ls = [];
 			_visitNode(base,function(node){
 				if(node !== base && node.nodeType === ELEMENT_NODE && node.namespaceURI === namespaceURI && (localName === '*' || node.localName == localName)){

@@ -401,7 +401,11 @@ Node.prototype = {
 
 
 function _xmlEncoder(c){
-	return c == '<' && '&lt;' || c == '&' && '&amp;' || c == '"' && '&quot;'||'&#'+c.charCodeAt()+';'
+	return c == '<' && '&lt;' ||
+         c == '>' && '&gt;' ||
+         c == '&' && '&amp;' ||
+         c == '"' && '&quot;' ||
+         '&#'+c.charCodeAt()+';'
 }
 
 
@@ -919,7 +923,9 @@ function serializeToString(node,buf){
 			buf.push('>');
 			//if is cdata child node
 			if(isHTML && /^script$/i.test(nodeName)){
-				buf.push(child.data);
+				if(child){
+					buf.push(child.data);
+				}
 			}else{
 				while(child){
 					serializeToString(child,buf);
@@ -940,9 +946,9 @@ function serializeToString(node,buf){
 		}
 		return;
 	case ATTRIBUTE_NODE:
-		return buf.push(' ',node.name,'="',node.value.replace(/[<&"]/g,_xmlEncoder),'"')
+		return buf.push(' ',node.name,'="',node.value.replace(/[<>&"]/g,_xmlEncoder),'"');
 	case TEXT_NODE:
-		return buf.push(node.data.replace(/[<&]/g,_xmlEncoder));
+		return buf.push(node.data.replace(/[<>&]/g,_xmlEncoder));
 	case CDATA_SECTION_NODE:
 		return buf.push( '<![CDATA[',node.data,']]>');
 	case COMMENT_NODE:

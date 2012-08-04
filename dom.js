@@ -919,7 +919,9 @@ function serializeToString(node,buf){
 			buf.push('>');
 			//if is cdata child node
 			if(isHTML && /^script$/i.test(nodeName)){
-				buf.push(child.data);
+				if(child){
+					buf.push(child.data);
+				}
 			}else{
 				while(child){
 					serializeToString(child,buf);
@@ -942,7 +944,7 @@ function serializeToString(node,buf){
 	case ATTRIBUTE_NODE:
 		return buf.push(' ',node.name,'="',node.value.replace(/[<&"]/g,_xmlEncoder),'"')
 	case TEXT_NODE:
-		return buf.push(node.data.replace(/[<&]/g,_xmlEncoder));
+		return buf.push(node.data.replace(/[<&]/g,_xmlEncoder).replace(/\]\]>/g,']]&gt;'));
 	case CDATA_SECTION_NODE:
 		return buf.push( '<![CDATA[',node.data,']]>');
 	case COMMENT_NODE:
@@ -1082,12 +1084,13 @@ try{
 				switch(this.nodeType){
 				case 1:
 				case 11:
-					var c = node.firstChild;
-					while(c){
-						node.removeChild(c)
-						c = c.nextSibling;
+					while(this.firstChild){
+						this.removeChild(this.firstChild);
 					}
-					return ;
+          if(String(data)!=''){
+  					this.appendChild(this.ownerDocument.createTextNode(data));
+          }
+					break;
 				default:
 					//TODO:
 					this.data = data;

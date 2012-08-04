@@ -3,6 +3,12 @@ var DOMParser = require('xmldom').DOMParser;
 var XMLSerializer = require('xmldom').XMLSerializer;
 // Create a Test Suite
 wows.describe('XML Namespace Parse').addBatch({
+    // See: http://jsfiddle.net/bigeasy/ShcXP/1/
+    "Document_getElementsByTagName":function () {
+    	var doc = new DOMParser().parseFromString('<a><b/></a>');
+    	console.assert(doc.getElementsByTagName('*').length == 2);
+    	console.assert(doc.documentElement.getElementsByTagName('*').length == 1);
+    },
     'getElementsByTagName': function () { 
     	
 
@@ -50,7 +56,7 @@ wows.describe('XML Namespace Parse').addBatch({
        console.assert(childs.length==6,childs.length);
        
         var childs = doc.getElementsByTagNameNS("http://test.com",'*');
-       console.assert(childs.length==6,childs.length);
+       console.assert(childs.length==7,childs.length);
        
        
        var childs = doc.documentElement.getElementsByTagNameNS("http://test.com",'test');
@@ -116,6 +122,5 @@ wows.describe('XML Namespace Parse').addBatch({
     "nested append failed":function(){
     },
     "self append failed":function(){
-    	
     }
 }).run(); // Run it

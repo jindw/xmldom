@@ -716,7 +716,7 @@ Element.prototype = {
 	},
 	setAttribute : function(name, value){
 		var attr = this.ownerDocument.createAttribute(name);
-		attr.value = attr.nodeValue = value;
+		attr.value = attr.nodeValue = "" + value;
 		this.setAttributeNode(attr)
 	},
 	removeAttribute : function(name){

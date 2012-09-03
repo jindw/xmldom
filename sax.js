@@ -34,9 +34,24 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 	}
 	function appendText(end){
 		var xt = source.substring(start,end).replace(/&#?\w+;/g,entityReplacer);
+		locator&&position(start);
 		contentHandler.characters(xt,0,end-start);
 		start = end
 	}
+	function position(start,m){
+		while(start>=endPos && (m = linePattern.exec(source))){
+			startPos = m.index;
+			endPos = startPos + m[0].length;
+			locator.lineNumber++;
+			//console.log('line++:',locator,startPos,endPos)
+		}
+		locator.columnNumber = start-startPos+1;
+	}
+	var locator = contentHandler.locator;
+	var linePattern = /.+(?:\r\n?|\n)|.*$/g
+	var startPos = 0;
+	var endPos = 0;
+	
 	var elStack = [{currentNSMap:defaultNSMapCopy}]
 	var closeMap = {};
 	var start = 0;
@@ -61,9 +76,11 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 			break;
 			// end elment
 		case '?':// <?...?>
+			locator&&position(i);
 			end = parseInstruction(source,i,lexHandler);
 			break;
 		case '!':// <!doctype,<![CDATA,<!--
+			locator&&position(i);
 			end = parseDCC(source,i,contentHandler,lexHandler);
 			break;
 		default:
@@ -74,6 +91,7 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 				return;
 			}else{
 				try{
+					locator&&position(i);
 					var end = parseElementAttribute(source,i,entityReplacer,contentHandler,lexHandler,closeMap,elStack);
 				}catch(e){
 					end = -1;

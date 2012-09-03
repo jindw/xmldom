@@ -1,4 +1,5 @@
-function DOMParser(){
+function DOMParser(pos){
+	this.recordPositions = pos;
 	
 }
 DOMParser.prototype.parseFromString = function(source,mimeType){
@@ -6,6 +7,9 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	var handler = new DOMHandler();
 	var defaultNSMap = {};
 	var entityMap = {'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"}
+	if(this.recordPositions){
+		handler.setDocumentLocator({})
+	}
 	sax.contentHandler = handler;
 	sax.lexicalHandler = handler;
 	sax.errorHandler = handler;
@@ -30,7 +34,10 @@ function DOMHandler() {
     this.errors = [];
     this.cdata = false;
 }
-
+function position(locator,node){
+	node.lineNumber = locator.lineNumber;
+	node.columnNumber = locator.columnNumber;
+}
 /**
  * @see org.xml.sax.ContentHandler#startDocument
  * @link http://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html
@@ -39,7 +46,7 @@ DOMHandler.prototype = {
 	startDocument : function() {
     	this.document = new DOMImplementation().createDocument(null, null, null);
     	if (this.locator) {
-        	this.document.documentURI = this.locator.getSystemId();
+        	this.document.documentURI = this.locator.systemId;
     	}
 	},
 	startElement:function(namespaceURI, localName, qName, attrs) {
@@ -48,6 +55,8 @@ DOMHandler.prototype = {
 	    var len = attrs.length;
 	    appendElement(this, el);
 	    this.currentElement = el;
+	    
+		this.locator && position(this.locator,el)
 	    for (var i = 0 ; i < len; i++) {
 	        var namespaceURI = attrs.getURI(i);
 	        var value = attrs.getValue(i);
@@ -69,6 +78,7 @@ DOMHandler.prototype = {
 	},
 	processingInstruction:function(target, data) {
 	    var ins = this.document.createProcessingInstruction(target, data);
+	    this.locator && position(this.locator,ins)
 	    appendElement(this, ins);
 	},
 	ignorableWhitespace:function(ch, start, length) {
@@ -77,12 +87,13 @@ DOMHandler.prototype = {
 		chars = _toString.apply(this,arguments)
 		if(this.currentElement && chars){
 			if (this.cdata) {
-				var cdataNode = this.document.createCDATASection(chars);
-				this.currentElement.appendChild(cdataNode);
+				var charNode = this.document.createCDATASection(chars);
+				this.currentElement.appendChild(charNode);
 			} else {
-				var textNode = this.document.createTextNode(chars);
-				this.currentElement.appendChild(textNode);
+				var charNode = this.document.createTextNode(chars);
+				this.currentElement.appendChild(charNode);
 			}
+			this.locator && position(this.locator,charNode)
 		}
 	},
 	skippedEntity:function(name) {
@@ -91,13 +102,16 @@ DOMHandler.prototype = {
 		this.document.normalize();
 	},
 	setDocumentLocator:function (locator) {
-	    this.locator = locator;
+	    if(this.locator = locator){
+	    	locator.lineNumber = 0;
+	    }
 	},
 	//LexicalHandler
 	comment:function(chars, start, length) {
 		chars = _toString.apply(this,arguments)
-	    var comment = this.document.createComment(chars);
-	    appendElement(this, comment);
+	    var comm = this.document.createComment(chars);
+	    this.locator && position(this.locator,comm)
+	    appendElement(this, comm);
 	},
 	
 	startCDATA:function() {
@@ -112,6 +126,7 @@ DOMHandler.prototype = {
 		var impl = this.document.implementation;
 	    if (impl && impl.createDocumentType) {
 	        var dt = impl.createDocumentType(name, publicId, systemId);
+	        this.locator && position(this.locator,dt)
 	        appendElement(this, dt);
 	    }
 	},

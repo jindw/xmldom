@@ -119,6 +119,19 @@ wows.describe('XML Namespace Parse').addBatch({
        	var str3 = new XMLSerializer().serializeToString(doc3);
        	console.assert(str1 == str3);
     },
+    "set textContent":function() {
+        var doc = new DOMParser().parseFromString('<test><a/><b><c/></b></test>');
+        var a = doc.documentElement.firstChild;
+        var b = a.nextSibling;
+        a.textContent = 'hello';
+        console.assert(doc.documentElement.toString() == '<test><a>hello</a><b><c/></b></test>');
+        b.textContent = 'there';
+        console.assert(doc.documentElement.toString() == '<test><a>hello</a><b>there</b></test>');
+        b.textContent = '';
+        console.assert(doc.documentElement.toString() == '<test><a>hello</a><b/></test>');
+        doc.documentElement.textContent = 'bye';
+        console.assert(doc.documentElement.toString() == '<test>bye</test>');
+    },
     "nested append failed":function(){
     },
     "self append failed":function(){

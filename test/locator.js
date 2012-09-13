@@ -8,7 +8,7 @@ function assertPosition(n, line, col) {
 
 wows.describe('DOMLocator').addBatch({
   'node positions': function() {
-    var parser = new DOMParser(true);
+    var parser = new DOMParser({locator:{}});
     var doc = parser.parseFromString('<?xml version="1.0"?><!-- aaa -->\n<test>\n  <a attr="value"><![CDATA[1]]>something\n</a>x</test>', 'text/xml');
     var test = doc.documentElement;
     var a = test.firstChild.nextSibling;

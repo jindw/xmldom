@@ -1,8 +1,8 @@
 {
   "name": "xmldom",
-  "version": "0.1.11",
+  "version": "0.1.13",
   "description": "A W3C Standard XML DOM(Level2 CORE) implementation and parser(DOMParser/XMLSerializer).",
-  "keywords": ["XML","DOM","parser","javascript","DOMParser","XMLSerializer"],
+  "keywords": ["w3c","dom","xml","parser","javascript","DOMParser","XMLSerializer"],
   "author": "jindw <jindw@xidea.org> (http://www.xidea.org)",
   "homepage": "https://github.com/jindw/xmldom",
   "repository": {"type": "git","url": "git://github.com/jindw/xmldom.git"},

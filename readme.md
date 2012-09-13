@@ -29,6 +29,11 @@ API Reference
  * [DOMParser](https://developer.mozilla.org/en/DOMParser):
 		
 		parseFromString(xmlsource,mimeType)
+		new DOMParser(options);//extension by xmldom
+		options:
+			[locator:{}](http://www.saxproject.org/apidoc/org/xml/sax/Locator.html) //if the locator is set, every xml node position is provide as node.lineNumber and node.columnNumber
+			[errorHandler:{warning:callback,error:callback,failtError:callback}](http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html)
+		
 
  * [XMLSerializer](https://developer.mozilla.org/en/XMLSerializer)
 	

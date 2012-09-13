@@ -1,18 +1,19 @@
-function DOMParser(pos){
-	this.recordPositions = pos;
+function DOMParser(options){
+	this.options = options||{};
 	
 }
 DOMParser.prototype.parseFromString = function(source,mimeType){
 	var sax =  new XMLReader();
+	var options = this.options;
 	var handler = new DOMHandler();
 	var defaultNSMap = {};
 	var entityMap = {'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"}
-	if(this.recordPositions){
-		handler.setDocumentLocator({})
+	if(options.locator){
+		handler.setDocumentLocator(options.locator)
 	}
-	sax.contentHandler = handler;
-	sax.lexicalHandler = handler;
-	sax.errorHandler = handler;
+	sax.contentHandler = options.contentHandler || handler;
+	sax.lexicalHandler =options.lexicalHandler || handler;
+	sax.errorHandler =options.errorHandler ||  handler;
 	if(/\/x?html?$/.test(mimeType)){
 		entityMap.nbsp = '\xa0';
 		entityMap.copy = '\xa9';
@@ -31,7 +32,6 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
  * @link http://www.saxproject.org/apidoc/org/xml/sax/helpers/DefaultHandler.html
  */
 function DOMHandler() {
-    this.errors = [];
     this.cdata = false;
 }
 function position(locator,node){
@@ -68,7 +68,7 @@ DOMHandler.prototype = {
 		var current = this.currentElement
 	    var tagName = current.tagName;
 	    if(qName != tagName){
-	        console.warn("end tag name: "+qName+' is not match the current start tagName:'+tagName);
+	        this.error("end tag name: "+qName+' is not match the current start tagName:'+tagName);
 	    }
 	    this.currentElement = current.parentNode;
 	},
@@ -102,7 +102,7 @@ DOMHandler.prototype = {
 		this.document.normalize();
 	},
 	setDocumentLocator:function (locator) {
-	    if(this.locator = locator){
+	    if(this.locator = locator){// && !('lineNumber' in locator)){
 	    	locator.lineNumber = 0;
 	    }
 	},
@@ -136,15 +136,12 @@ DOMHandler.prototype = {
 	 */
 	warning:function(error) {
 		console.warn(error);
-	    this.errors.push(error);
 	},
 	error:function(error) {
 		console.error(error);
-	    this.errors.push(error);
 	},
 	fatalError:function(error) {
 		console.error(error);
-	    this.errors.push(error);
 	    throw error;
 	}
 }

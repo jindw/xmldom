@@ -94,6 +94,7 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 					locator&&position(i);
 					var end = parseElementAttribute(source,i,entityReplacer,contentHandler,lexHandler,closeMap,elStack);
 				}catch(e){
+					errorHandler.error('element parse error: '+e);
 					end = -1;
 				}
 			}
@@ -259,8 +260,7 @@ function appendElement(contentHandler,elStack,el,tagName,selfClosed){
 	var i = el.length;
 	
 	if(!tagNamePattern.test(tagName)){
-		console.error('invalid tagName:',tagName)
-		throw new Error();
+		throw new Error('invalid tagName:'+tagName)
 	}
 	while(i--){
 		var a = el[i];
@@ -269,8 +269,7 @@ function appendElement(contentHandler,elStack,el,tagName,selfClosed){
 		var nsp = qName.indexOf(':');
 		
 		if(!tagNamePattern.test(qName)){
-			console.error('invalid attribute:',qName)
-			throw new Error();
+			throw new Error('invalid attribute:'+qName)
 		}
 		if(nsp>0){
 			var prefix = a.prefix = qName.slice(0,nsp);

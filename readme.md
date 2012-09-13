@@ -6,39 +6,54 @@ support `DOMParser` and `XMLSerializer` interface such as in browser.
 
 Install:
 -------
-	npm install xmldom
+>npm install xmldom
+
 Example:
--------
-	var DOMParser = require('xmldom').DOMParser;
-	var doc = new DOMParser().parseFromString(
-	    '<xml xmlns="a" xmlns:c="./lite">\n'+
-	        '\t<child>test</child>\n'+
-	        '\t<child></child>\n'+
-	        '\t<child/>\n'+
-	    '</xml>'
-	    ,'text/xml');
-	doc.documentElement.setAttribute('x','y');
-	doc.documentElement.setAttributeNS('./lite','c:x','y2');
-	var nsAttr = doc.documentElement.getAttributeNS('./lite','x')
-	console.info(nsAttr)
-	console.info(doc)
-	
+====
+```javascript
+var DOMParser = require('xmldom').DOMParser;
+var doc = new DOMParser().parseFromString(
+    '<xml xmlns="a" xmlns:c="./lite">\n'+
+        '\t<child>test</child>\n'+
+        '\t<child></child>\n'+
+        '\t<child/>\n'+
+    '</xml>'
+    ,'text/xml');
+doc.documentElement.setAttribute('x','y');
+doc.documentElement.setAttributeNS('./lite','c:x','y2');
+var nsAttr = doc.documentElement.getAttributeNS('./lite','x')
+console.info(nsAttr)
+console.info(doc)
+```
 API Reference
 =====
 
  * [DOMParser](https://developer.mozilla.org/en/DOMParser):
-		
-		parseFromString(xmlsource,mimeType)
-		new DOMParser(options);//extension by xmldom
-		options:
-			[locator:{}](http://www.saxproject.org/apidoc/org/xml/sax/Locator.html) //if the locator is set, every xml node position is provide as node.lineNumber and node.columnNumber
-			[errorHandler:{warning:callback,error:callback,failtError:callback}](http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html)
-		
+
+	```javascript
+	parseFromString(xmlsource,mimeType)
+	```
+ * [DOMParser extension by xmldom]
+
+	```javascript
+	new DOMParser(options)//added the options argument
+	```
+	* [options.locator](http://www.saxproject.org/apidoc/org/xml/sax/Locator.html) 
+
+	```javascript
+	{}		//if the locator is set, every xml node position is provide as node.lineNumber and node.columnNumber
+	```
+	* [oprions.errorHandler](http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html)
+
+	```javascript
+	{warning:callback,error:callback,failtError:callback}
+	```
 
  * [XMLSerializer](https://developer.mozilla.org/en/XMLSerializer)
-	
-		serializeToString(node)
-
+ 
+	```javascript
+	serializeToString(node)
+	```
 DOM level2 method and attribute:
 ------
 

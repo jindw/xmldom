@@ -907,14 +907,14 @@ XMLSerializer.prototype.serializeToString = function(node){
 Node.prototype.toString =function(){
 	return XMLSerializer.prototype.serializeToString(this);
 }
-function serializeToString(node,buf){
+function serializeToString(node,buf,isHTML){
 	switch(node.nodeType){
 	case ELEMENT_NODE:
 		var attrs = node.attributes;
 		var len = attrs.length;
 		var child = node.firstChild;
 		var nodeName = node.tagName;
-		var isHTML = htmlns === node.namespaceURI
+		isHTML = isHTML || htmlns === node.namespaceURI
 		buf.push('<',nodeName);
 		for(var i=0;i<len;i++){
 			serializeToString(attrs.item(i),buf,isHTML);
@@ -928,7 +928,7 @@ function serializeToString(node,buf){
 				}
 			}else{
 				while(child){
-					serializeToString(child,buf);
+					serializeToString(child,buf,isHTML);
 					child = child.nextSibling;
 				}
 			}
@@ -941,7 +941,7 @@ function serializeToString(node,buf){
 	case DOCUMENT_FRAGMENT_NODE:
 		var child = node.firstChild;
 		while(child){
-			serializeToString(child,buf);
+			serializeToString(child,buf,isHTML);
 			child = child.nextSibling;
 		}
 		return;

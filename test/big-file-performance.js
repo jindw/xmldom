@@ -46,8 +46,10 @@ function domjs(data){
 	}
 	return doc
 }
+var maxRandomAttr =parseInt(Math.random()*60);
+console.log('maxRandomAttr',maxRandomAttr)
 function addAttributes(el){
-	var c =parseInt(Math.random()*10);
+	var c =parseInt(Math.random()*maxRandomAttr);
 	while(c--){
 		el.setAttribute('dynamic-attr'+c,c+new Array(c).join('.'));
 	}
@@ -69,24 +71,62 @@ wows.describe('XML Node Parse').addBatch({
 		var path = require('path')
 		var data = fs.readFileSync(path.resolve(__dirname,'./test.xml'), 'ascii');
 		//data = "<?xml version=\"1.0\"?><xml><child> ![CDATA[v]] d &amp;</child>\n</xml>"
-		
+		console.log('test simple xml')
+		var t1 = new Date();
 		var doc1 = xmldom(data);
+		var t2 = new Date();
 		var doc2 = domjs(data);
+		var t3 = new Date();
 		var doc3 = libxml(data);
+		var t4 = new Date();
+		var xmldomTime = t2-t1;
+		var domjsTime = t3-t1;
+		console.assert(domjsTime>xmldomTime,'xmldom performance must more height!!')
 		
 		
 		
 		addAttributes(doc1.documentElement);
 		
 		data = doc1.toString();
-		
+		console.log('test more attribute xml')
+		var t1 = new Date();
 		var doc1 = xmldom(data);
+		var t2 = new Date();
 		var doc2 = domjs(data);
+		var t3 = new Date();
 		var doc3 = libxml(data);
+		var t4 = new Date();
+		var xmldomTime = t2-t1;
+		var domjsTime = t3-t1;
+		console.assert(domjsTime>xmldomTime,'xmldom performance must more height!!')
+		function xmlReplace(a,v){
+			switch(v){
+			case '&':
+			return '&amp;'
+			case '<':
+			return '&lt;'
+			default:
+			if(v.length>1){
+				return v.replace(/([&<])/g,xmlReplace)
+			}
+			}
+		}
+		xmldomresult = (domjs(doc1+'')+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[([\s\S]*)\]\]>/g,xmlReplace)
+		domjsresult = (doc2+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[([\s\S]*)\]\]>/g,xmlReplace)
+		data = xmldomresult;
+		//console.log(data.substring(100,200))
 		
-		xmldomresult = (domjs(doc1+'')+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
-		domjsresult = (doc2+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[\]\]>/g,'')
-		
+		console.log('test more attribute xml without cdata')
+		var t1 = new Date();
+		var doc1 = xmldom(data);
+		var t2 = new Date();
+		var doc2 = domjs(data);
+		var t3 = new Date();
+		var doc3 = libxml(data);
+		var t4 = new Date();
+		var xmldomTime = t2-t1;
+		var domjsTime = t3-t1;
+		console.assert(domjsTime>xmldomTime,'xmldom performance must more height!!')
 		
 		//console.log(xmldomresult,domjsresult)
 		

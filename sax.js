@@ -32,7 +32,7 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 			return a;
 		}
 	}
-	function appendText(end){
+	function appendText(end){//has some bugs
 		var xt = source.substring(start,end).replace(/&#?\w+;/g,entityReplacer);
 		locator&&position(start);
 		contentHandler.characters(xt,0,end-start);
@@ -47,13 +47,12 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 		}
 		locator.columnNumber = start-startPos+1;
 	}
-	var locator = contentHandler.locator;
-	var linePattern = /.+(?:\r\n?|\n)|.*$/g
 	var startPos = 0;
 	var endPos = 0;
+	var linePattern = /.+(?:\r\n?|\n)|.*$/g
+	var locator = contentHandler.locator;
 	
-	var elStack = [{currentNSMap:defaultNSMapCopy}]
-	var closeMap = {};
+	var parseStack = [{currentNSMap:defaultNSMapCopy,closeMap:{}}]
 	var start = 0;
 	while(true){
 		var i = source.indexOf('<',start);
@@ -64,8 +63,12 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 		case '/':
 			var end = source.indexOf('>',i+3);
 			var tagName = source.substring(i+2,end);
-			var config = elStack.pop();
+			var config = parseStack.pop();
 			var localNSMap = config.localNSMap;
+			
+	        if(config.tagName != tagName){
+	            errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+	        }
 			contentHandler.endElement(config.uri,config.localName,tagName);
 			if(localNSMap){
 				for(var prefix in localNSMap){
@@ -92,7 +95,7 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 			}else{
 				try{
 					locator&&position(i);
-					var end = parseElementAttribute(source,i,entityReplacer,contentHandler,lexHandler,closeMap,elStack);
+					var end = parseElementStartPart(source,i,entityReplacer,contentHandler,lexHandler,errorHandler,parseStack);
 				}catch(e){
 					errorHandler.error('element parse error: '+e);
 					end = -1;
@@ -101,37 +104,18 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 
 		}
 		if(end<0){
+			//TODO: 这里有可能sax回退，有位置错误风险
 			appendText(i+1);
 		}else{
 			start = end;
 		}
 	}
 }
-function parseSpecialContent(el,source,p,entityReplacer,contentHandler,lexHandler){
-	var ns = el.uri;
-	var tagName = el.tagName;
-	if(ns === 'http://www.w3.org/1999/xhtml' &&/^(?:script|textarea)$/i.test(tagName)){
-		var end =  source.indexOf('</'+tagName+'>',p);
-		var text = source.substring(p+1,end);
-		if(/[&<]/.test(text)){
-			if(/^script$/i.test(tagName)){
-				//if(!/\]\]>/.test(text)){
-					//lexHandler.startCDATA();
-					contentHandler.characters(text,0,text.length);
-					//lexHandler.endCDATA();
-					return end;
-				//}
-			}//}else{//text area
-				text = text.replace(/&#?\w+;/g,entityReplacer);
-				contentHandler.characters(text,0,text.length);
-				return end;
-			//}
-			
-		}
-	}
-}
-
-function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHandler,closeMap,elStack){
+/**
+ * @see #appendElement(source,elStartEnd,el,selfClosed,entityReplacer,contentHandler,lexHandler,parseStack);
+ * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
+ */
+function parseElementStartPart(source,start,entityReplacer,contentHandler,lexHandler,errorHandler,parseStack){
 	var el = new ElementAttributes();
 	var tagName;
 	var attrName;
@@ -152,10 +136,12 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHan
 					el[index++] = {qName:attrName,value:value}
 					s = 6;
 				}else{
-					//reportError
+					//reportError: no end qute match
+					throw new Error('attribute value no end \''+c+'\' match');
 				}
 			}else{
-				//reportError
+				//reportError: no equal before
+				throw new Error('attribute value must after "="');
 			}
 			break;
 		case '=':
@@ -165,7 +151,8 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHan
 			}else if(s === 3){
 				s = 4;
 			}else{
-				//reportError
+				//reportError: equal must after attrName or space after attrName
+				throw new Error('attribute equal must after attrName');
 			}
 			break;
 		//tagName:0,tagSpace:1,
@@ -185,9 +172,10 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHan
 				}
 				if(value){
 					if(s == 2){
+						errorHandler.warning('attribute "'+value+'" missed value!! "'+value+'" instead!!')
 						el[index++] = {qName:value,value:value}
 					}else if(s==5){
-						el[index++] = {qName:attrName,value:value}
+						el[index++] = {qName:attrName,value:value.replace(/&#?\w+;/g,entityReplacer)}
 					}else if(s ==0){
 						tagName  = value;
 					}
@@ -201,9 +189,8 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHan
 			}
 //			console.log(tagName,tagNamePattern,tagNamePattern.test(tagName))
 			el.length = index;
-			selfClosed = selfClosed||fixSelfClosed(closeMap,source,tagName,p)
-			appendElement(contentHandler,elStack,el,tagName,selfClosed);
-			return selfClosed ?p+1: parseSpecialContent(el,source,p,entityReplacer,contentHandler,lexHandler) || p+1;
+			el.tagName = tagName;
+			return appendElement(source,p,el,selfClosed,entityReplacer,contentHandler,lexHandler,parseStack);
 		/*xml space '\x20' | #x9 | #xD | #xA; */
 		case '\u0080':
 			c = ' ';
@@ -219,13 +206,14 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHan
 					s = 3;
 					break;
 				case 5:
-					var value = source.slice(start,p);
+					var value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
 					el[index++] = {qName:attrName,value:value}
 					s = 6;
 				}
 			}else{
 				switch(s){
 				case 3:
+					errorHandler.warning('attribute "'+attrName+'" missed value!! "'+attrName+'" instead!!')
 					el[index++] = {qName:attrName,value:attrName};
 					start = p;
 					s = 2;
@@ -244,21 +232,15 @@ function parseElementAttribute(source,start,entityReplacer,contentHandler,lexHan
 		p++;
 	}
 }
-function fixSelfClosed(closeMap,source,tagName,p){
-	//if(tagName in closeMap){
-	var pos = closeMap[tagName];
-	if(pos == null){
-		//console.log(tagName)
-		pos = closeMap[tagName] = source.lastIndexOf('</'+tagName+'>')
-	}
-	return pos<p;
-	//} 
-}
-function appendElement(contentHandler,elStack,el,tagName,selfClosed){
+/**
+ * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
+ */
+function appendElement(source,elStartEnd,el,selfClosed,entityReplacer,contentHandler,lexHandler,parseStack){
+	var tagName = el.tagName;
 	var localNSMap = null;
-	var currentNSMap = elStack[elStack.length-1].currentNSMap;
+	var currentNSMap = parseStack[parseStack.length-1].currentNSMap;
 	var i = el.length;
-	
+	selfClosed = selfClosed||fixSelfClosed(source,elStartEnd,tagName,parseStack[0].closeMap)
 	if(!tagNamePattern.test(tagName)){
 		throw new Error('invalid tagName:'+tagName)
 	}
@@ -314,20 +296,58 @@ function appendElement(contentHandler,elStack,el,tagName,selfClosed){
 		localName = el.localName = tagName;
 	}
 	//no prefix element has default namespace
-	contentHandler.startElement(el.uri = currentNSMap[prefix || ''],localName,tagName,el);
+	var ns = el.uri = currentNSMap[prefix || ''];
+	contentHandler.startElement(ns,localName,tagName,el);
+	//endPrefixMapping and startPrefixMapping have not any help for dom builder
+	//localNSMap = null
 	if(selfClosed){
-		contentHandler.endElement(el.uri,localName,tagName);
+		contentHandler.endElement(ns,localName,tagName);
+		if(localNSMap){
+			for(prefix in localNSMap){
+				contentHandler.endPrefixMapping(prefix) 
+			}
+		}
 	}else{
-		el.tagName = tagName;
 		el.currentNSMap = currentNSMap;
 		el.localNSMap = localNSMap;
-		elStack.push(el);
+		parseStack.push(el);
 	}
-	if(localNSMap){
-		for(prefix in localNSMap){
-			contentHandler.endPrefixMapping(prefix) 
+	if(!selfClosed && ns === 'http://www.w3.org/1999/xhtml'){
+		return parseHtmlSpecialContent(source,elStartEnd,tagName,entityReplacer,contentHandler,lexHandler)
+	}
+	return elStartEnd+1;
+}
+function parseHtmlSpecialContent(source,elStartEnd,tagName,entityReplacer,contentHandler,lexHandler){
+	if(/^(?:script|textarea)$/i.test(tagName)){
+		var elEndStart =  source.indexOf('</'+tagName+'>',elStartEnd);
+		var text = source.substring(elStartEnd+1,elEndStart);
+		if(/[&<]/.test(text)){
+			if(/^script$/i.test(tagName)){
+				//if(!/\]\]>/.test(text)){
+					//lexHandler.startCDATA();
+					contentHandler.characters(text,0,text.length);
+					//lexHandler.endCDATA();
+					return elEndStart;
+				//}
+			}//}else{//text area
+				text = text.replace(/&#?\w+;/g,entityReplacer);
+				contentHandler.characters(text,0,text.length);
+				return elEndStart;
+			//}
+			
 		}
 	}
+	return elStartEnd+1;
+}
+function fixSelfClosed(source,elStartEnd,tagName,closeMap){
+	//if(tagName in closeMap){
+	var pos = closeMap[tagName];
+	if(pos == null){
+		//console.log(tagName)
+		pos = closeMap[tagName] = source.lastIndexOf('</'+tagName+'>')
+	}
+	return pos<elStartEnd;
+	//} 
 }
 function _copy(source,target){
 	for(var n in source){target[n] = source[n]}

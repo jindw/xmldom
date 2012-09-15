@@ -1,19 +1,24 @@
 function DOMParser(options){
-	this.options = options||{};
+	this.options = 
+			options == true?{locator:{}}://To the version (0.1.12) compatible
+			options ||{};
 	
 }
 DOMParser.prototype.parseFromString = function(source,mimeType){
 	var sax =  new XMLReader();
-	var options = this.options;
 	var handler = new DOMHandler();
+	var options = this.options;
+	var locator = options.locator;
+	var errorHandler = options.errorHandler;
 	var defaultNSMap = {};
 	var entityMap = {'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"}
-	if(options.locator){
-		handler.setDocumentLocator(options.locator)
+	if(locator){
+		handler.setDocumentLocator(locator)
 	}
+	
+	sax.errorHandler = errorHandler? buildErrorHandler(errorHandler,locator) :handler;
 	sax.contentHandler = options.contentHandler || handler;
 	sax.lexicalHandler =options.lexicalHandler || handler;
-	sax.errorHandler =options.errorHandler ||  handler;
 	if(/\/x?html?$/.test(mimeType)){
 		entityMap.nbsp = '\xa0';
 		entityMap.copy = '\xa9';
@@ -21,6 +26,37 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	}
 	sax.parse(source,defaultNSMap,entityMap);
 	return handler.document;
+}
+function buildErrorHandler(errorImpl,locator){
+	var errorHandler = {}
+	var isCallback = errorImpl instanceof Function;
+	locator = locator||{}
+	function format(msg){
+		return msg+'@lineNumber:'+locator.lineNumber+',columnNumber:'+locator.columnNumber
+	}
+	function build(key){
+		var fn = errorImpl[key];
+		if(!fn){
+			if(isCallback){
+				fn = errorImpl
+			}else{
+				var i=arguments.length;
+				while(--i){
+					if(fn = errorImpl[arguments[i]]){
+						break;
+					}
+				}
+			}
+		}
+		if(!fn){
+			console.log(errorImpl,key)
+		}
+		errorHandler[key] = fn.length==2?function(msg){fn(key,format(msg));}:function(msg){fn(key+':'+format(msg));}
+	}
+	build('warning','fatalError','error','warn');
+	build('error','fatalError','warn','warning');
+	build('fatalError','warn','warning','error');
+	return errorHandler;
 }
 /**
  * +ContentHandler+ErrorHandler
@@ -67,9 +103,6 @@ DOMHandler.prototype = {
 	endElement:function(namespaceURI, localName, qName) {
 		var current = this.currentElement
 	    var tagName = current.tagName;
-	    if(qName != tagName){
-	        this.error("end tag name: "+qName+' is not match the current start tagName:'+tagName);
-	    }
 	    this.currentElement = current.parentNode;
 	},
 	startPrefixMapping:function(prefix, uri) {
@@ -135,13 +168,13 @@ DOMHandler.prototype = {
 	 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
 	 */
 	warning:function(error) {
-		console.warn(error);
+		console.warn(error,this.locator||'set locator for source position');
 	},
 	error:function(error) {
-		console.error(error);
+		console.error(error,this.locator||'set locator for source position');
 	},
 	fatalError:function(error) {
-		console.error(error);
+		console.error(error,this.locator||'set locator for source position');
 	    throw error;
 	}
 }

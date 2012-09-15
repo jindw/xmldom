@@ -33,20 +33,26 @@ API Reference
 	```javascript
 	parseFromString(xmlsource,mimeType)
 	```
- * [DOMParser extension by xmldom]
+	* **options extension** _by xmldom_(not BOM standard!!)
 
 	```javascript
-	new DOMParser(options)//added the options argument
-	```
-	* [options.locator](http://www.saxproject.org/apidoc/org/xml/sax/Locator.html) 
-
-	```javascript
-	{}		//if the locator is set, every xml node position is provide as node.lineNumber and node.columnNumber
-	```
-	* [oprions.errorHandler](http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html)
-
-	```javascript
-	{warning:callback,error:callback,failtError:callback}
+	//added the options argument
+	new DOMParser(options)
+	
+	//locator and errorHandler is supported
+	new DOMParser({
+		/* 
+		 * if the locator is set,
+		 * every xml node position is provide as node.lineNumber and node.columnNumber
+		 */
+		locator:{},
+		/**
+		 * youcan override the errorHandler for xml parser
+		 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
+		 */
+		errorHandler:{warning:callback,error:callback,failtError:callback}
+	})
+		
 	```
 
  * [XMLSerializer](https://developer.mozilla.org/en/XMLSerializer)
@@ -200,4 +206,16 @@ DOM level 3 support:
 		method:
 			isDefaultNamespace(namespaceURI){
 			lookupNamespaceURI(prefix)
-	
+
+DOM extension by xmldom
+---
+ * [Node Source Position]
+
+	Does not support by default;
+	you need to set the DOMParser [locator option](#api-reference), to activate this feature
+		
+		attribute:
+			//Numbered starting from '1'
+			lineNumber
+			//Numbered starting from '1'
+			columnNumber

@@ -42,14 +42,18 @@ DOMParser.prototype.parseFromString = function(data,mimeType){
 	}
 	return doc;
 }
+function include(){
+	for(var i=0;i<arguments.length;i++){
+		var file = arguments[i]
+		console.log('test ',file);
+		require(file);
+	}
+}
 console.log('test dom:')
-require('./dom');
-console.log('test parse-element:')
-require('./parse-element');
-console.log('test node:')
-require('./node');
-console.log('test namespace:')
-require('./namespace');
-console.log('test normalize:')
-require('./html/normalize');
-//require('./big-file-performance');
+include('./dom','./parse-element','./node','./namespace','./html/normalize'
+		,'./error','./locator'
+		,'./big-file-performance'
+		)
+
+
+

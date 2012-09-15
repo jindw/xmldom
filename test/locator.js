@@ -21,4 +21,7 @@ wows.describe('DOMLocator').addBatch({
     assertPosition(a.firstChild.nextSibling, 3, 19+'<![CDATA[1]]>'.length);
     assertPosition(test.lastChild, 4, 5);
   },
+  'error positions':function(){
+  	
+  }
 }).run();

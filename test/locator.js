@@ -22,6 +22,29 @@ wows.describe('DOMLocator').addBatch({
     assertPosition(test.lastChild, 4, 5);
   },
   'error positions':function(){
-  	
+  	var error = []
+    var parser = new DOMParser({
+    	locator:{systemId:'c:/test/1.xml'},
+    	errorHandler:function(msg){
+			error.push(msg);
+		}
+	});
+    var doc = parser.parseFromString('<html><body title="1<2"><table>&lt;;test</body></body></html>', 'text/html');
+	console.assert(/\n@c\:\/test\/1\.xml#\[line\:\d+,col\:\d+\]/.test(error.join(' ')),'line,col must record:'+error)
+  },
+  'error positions p':function(){
+  	var error = []
+    var parser = new DOMParser({
+    	locator:{},
+    	errorHandler:function(msg){
+			error.push(msg);
+		}
+	});
+    var doc = parser.parseFromString('<root>\n\t<err</root>', 'text/html');
+    var root = doc.documentElement;
+    var textNode = root.firstChild;
+	console.log(root+'/'+textNode)
+	console.assert(/\n@#\[line\:2,col\:2\]/.test(error.join(' ')),'line,col must record:'+error);
+	console.log(textNode.lineNumber+'/'+textNode.columnNumber)
   }
 }).run();

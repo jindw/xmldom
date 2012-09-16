@@ -5,8 +5,19 @@ var nameStartChar = /[A-Z_a-z\xC0-\xD6\xD8-\xF6\u00F8-\u02FF\u0370-\u037D\u037F-
 var nameChar = new RegExp("[\\-\\.0-9"+nameStartChar.source.slice(1,-1)+"\u00B7\u0300-\u036F\\ux203F-\u2040]");
 var tagNamePattern = new RegExp('^'+nameStartChar.source+nameChar.source+'*(?:\:'+nameStartChar.source+nameChar.source+'*)?$');
 //var tagNamePattern = /^[a-zA-Z_][\w\-\.]*(?:\:[a-zA-Z_][\w\-\.]*)?$/
-
 //var handlers = 'resolveEntity,getExternalSubset,characters,endDocument,endElement,endPrefixMapping,ignorableWhitespace,processingInstruction,setDocumentLocator,skippedEntity,startDocument,startElement,startPrefixMapping,notationDecl,unparsedEntityDecl,error,fatalError,warning,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,comment,endCDATA,endDTD,endEntity,startCDATA,startDTD,startEntity'.split(',')
+
+//S_TAG,	S_ATTR,	S_EQ,	S_V
+//S_ATTR_S,	S_E,	S_S,	S_C
+var S_TAG = 0;//tag name offerring
+var S_ATTR = 1;//attr name offerring 
+var S_ATTR_S=2;//attr name end and space offer
+var S_EQ = 3;//=space?
+var S_V = 4;//attr value(no quot value only)
+var S_E = 5;//attr value end and no space(quot end)
+var S_S = 6;//(attr value end || tag end ) && (space offer)
+var S_C = 7;//closed el<el />
+
 function XMLReader(){
 }
 
@@ -52,7 +63,8 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 	var linePattern = /.+(?:\r\n?|\n)|.*$/g
 	var locator = contentHandler.locator;
 	
-	var parseStack = [{currentNSMap:defaultNSMapCopy,closeMap:{}}]
+	var parseStack = [{currentNSMap:defaultNSMapCopy}]
+	var closeMap = {};
 	var start = 0;
 	while(true){
 		var i = source.indexOf('<',start);
@@ -95,7 +107,29 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 			}else{
 				try{
 					locator&&position(i);
-					var end = parseElementStartPart(source,i,entityReplacer,contentHandler,lexHandler,errorHandler,parseStack);
+					var el = new ElementAttributes();
+					//elStartEnd
+					var end = parseElementStartPart(source,i,el,entityReplacer,errorHandler);
+					var len = el.length;
+					//position fixed
+					if(len && locator){
+						var backup = copyLocator(locator,{});
+						for(var i = 0;i<len;i++){
+							var a = el[i];
+							position(a.offset);
+							a.offset = copyLocator(locator,{});
+						}
+						copyLocator(backup,locator);
+					}
+					el.closed = el.closed||fixSelfClosed(source,end,el.tagName,closeMap);
+					appendElement(el,contentHandler,parseStack);
+					
+					
+					if(el.uri === 'http://www.w3.org/1999/xhtml' && !el.closed){
+						end = parseHtmlSpecialContent(source,end,el.tagName,entityReplacer,contentHandler,lexHandler)
+					}else{
+						end++;
+					}
 				}catch(e){
 					errorHandler.error('element parse error: '+e);
 					end = -1;
@@ -111,121 +145,157 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 		}
 	}
 }
+function copyLocator(f,t){
+	t.lineNumber = f.lineNumber;
+	t.columnNumber = f.columnNumber;
+	return t;
+	
+}
+
 /**
  * @see #appendElement(source,elStartEnd,el,selfClosed,entityReplacer,contentHandler,lexHandler,parseStack);
  * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
  */
-function parseElementStartPart(source,start,entityReplacer,contentHandler,lexHandler,errorHandler,parseStack){
-	var el = new ElementAttributes();
-	var tagName;
+function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 	var attrName;
-	var selfClosed;
+	var value;
 	var p = ++start;
-	var index = 0;
-	var s = 0;//status
+	var s = S_TAG;//status
 	while(true){
 		var c = source.charAt(p);
 		switch(c){
+		case '=':
+			if(s === S_ATTR){//attrName
+				attrName = source.slice(start,p);
+				s = S_EQ;
+			}else if(s === S_ATTR_S){
+				s = S_EQ;
+			}else{
+				//fatalError: equal must after attrName or space after attrName
+				throw new Error('attribute equal must after attrName');
+			}
+			break;
 		case '\'':
 		case '"':
-			if(s === 4){//equal
+			if(s === S_EQ){//equal
 				start = p+1;
 				p = source.indexOf(c,start)
 				if(p>0){
 					value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
-					el[index++] = {qName:attrName,value:value}
-					s = 6;
+					el.add(attrName,value,start-1);
+					s = S_E;
 				}else{
-					//reportError: no end qute match
+					//fatalError: no end quot match
 					throw new Error('attribute value no end \''+c+'\' match');
 				}
 			}else{
-				//reportError: no equal before
+				//fatalError: no equal before
 				throw new Error('attribute value must after "="');
 			}
 			break;
-		case '=':
-			if(s === 2){//attrName
-				attrName = source.slice(start,p);
-				s = 4;
-			}else if(s === 3){
-				s = 4;
-			}else{
-				//reportError: equal must after attrName or space after attrName
-				throw new Error('attribute equal must after attrName');
+		case '/':
+			switch(s){
+			case S_TAG:
+				el.setTagName(source.slice(start,p));
+			case S_E:
+			case S_S:
+			case S_C:
+				s = S_C;
+				el.closed = true;
+			case S_V:
+			case S_ATTR:
+			case S_ATTR_S:
+				break;
+			//case S_EQ:
+			default:
+				throw new Error("attribute invalid close char('/')")
 			}
 			break;
-		//tagName:0,tagSpace:1,
-		// attrName:2,attrSpace:3,
-		// equal:4,equalSpace:4,
-		// value:5,valueSpace:6,end/>:
 		case '>':
 			switch(s){
-			case 0:
-			case 2:
-			case 3:
-			case 5:
-				var value = source.slice(start,p);
+			case S_TAG:
+				el.setTagName(source.slice(start,p));
+			case S_E:
+			case S_S:
+			case S_C:
+				break;//normal
+			case S_V://Compatible state
+			case S_ATTR:
+				value = source.slice(start,p);
 				if(value.slice(-1) === '/'){
-					selfClosed = true;
+					el.closed  = true;
 					value = value.slice(0,-1)
 				}
-				if(value){
-					if(s == 2){
-						errorHandler.warning('attribute "'+value+'" missed value!! "'+value+'" instead!!')
-						el[index++] = {qName:value,value:value}
-					}else if(s==5){
-						el[index++] = {qName:attrName,value:value.replace(/&#?\w+;/g,entityReplacer)}
-					}else if(s ==0){
-						tagName  = value;
-					}
+			case S_ATTR_S:
+				if(s === S_ATTR_S){
+					value = attrName;
+				}
+				if(s == S_V){
+					errorHandler.warning('attribute "'+value+'" missed quot(")!!');
+					el.add(attrName,value.replace(/&#?\w+;/g,entityReplacer),start)
+				}else{
+					errorHandler.warning('attribute "'+value+'" missed value!! "'+value+'" instead!!')
+					el.add(value,value,start)
 				}
 				break;
-			case 1:
-			default:
-				//case 4://error
-				//case 4://error
-				
+			case S_EQ:
+				throw new Error('attribute value missed!!');
 			}
 //			console.log(tagName,tagNamePattern,tagNamePattern.test(tagName))
-			el.length = index;
-			el.tagName = tagName;
-			return appendElement(source,p,el,selfClosed,entityReplacer,contentHandler,lexHandler,parseStack);
+			return p;
 		/*xml space '\x20' | #x9 | #xD | #xA; */
 		case '\u0080':
 			c = ' ';
 		default:
-			if(c<= ' '){
+			if(c<= ' '){//space
 				switch(s){
-				case 0:
-					tagName = source.slice(start,p);//tagName
-					s = 1;
+				case S_TAG:
+					el.setTagName(source.slice(start,p));//tagName
+					s = S_S;
 					break;
-				case 2:
+				case S_ATTR:
 					attrName = source.slice(start,p)
-					s = 3;
+					s = S_ATTR_S;
 					break;
-				case 5:
+				case S_V:
 					var value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
-					el[index++] = {qName:attrName,value:value}
-					s = 6;
+					errorHandler.warning('attribute "'+value+'" missed quot(")!!');
+					el.add(attrName,value,start)
+				case S_E:
+					s = S_S;
+					break;
+				//case S_S:
+				//case S_EQ:
+				//case S_ATTR_S:
+				//	void();break;
+				//case S_C:
+					//ignore warning
 				}
-			}else{
+			}else{//not space
+//S_TAG,	S_ATTR,	S_EQ,	S_V
+//S_ATTR_S,	S_E,	S_S,	S_C
 				switch(s){
-				case 3:
+				//case S_TAG:void();break;
+				//case S_ATTR:void();break;
+				//case S_V:void();break;
+				case S_ATTR_S:
 					errorHandler.warning('attribute "'+attrName+'" missed value!! "'+attrName+'" instead!!')
-					el[index++] = {qName:attrName,value:attrName};
+					el.add(attrName,attrName,start);
 					start = p;
-					s = 2;
+					s = S_ATTR;
 					break;
-				case 6:
+				case S_E:
+					errorHandler.warning('attribute space is required"'+attrName+'"!!')
+				case S_S:
+					s = S_ATTR;
 					start = p;
-					s = 2;
 					break;
-				case 1:
-				case 4:
+				case S_EQ:
+					s = S_V;
 					start = p;
-					s++;
+					break;
+				case S_C:
+					throw new Error("elements closed character '/' and '>' must be connected to");
 				}
 			}
 		}
@@ -235,24 +305,16 @@ function parseElementStartPart(source,start,entityReplacer,contentHandler,lexHan
 /**
  * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
  */
-function appendElement(source,elStartEnd,el,selfClosed,entityReplacer,contentHandler,lexHandler,parseStack){
+function appendElement(el,contentHandler,parseStack){
 	var tagName = el.tagName;
 	var localNSMap = null;
 	var currentNSMap = parseStack[parseStack.length-1].currentNSMap;
 	var i = el.length;
-	selfClosed = selfClosed||fixSelfClosed(source,elStartEnd,tagName,parseStack[0].closeMap)
-	if(!tagNamePattern.test(tagName)){
-		throw new Error('invalid tagName:'+tagName)
-	}
 	while(i--){
 		var a = el[i];
 		var qName = a.qName;
 		var value = a.value;
 		var nsp = qName.indexOf(':');
-		
-		if(!tagNamePattern.test(qName)){
-			throw new Error('invalid attribute:'+qName)
-		}
 		if(nsp>0){
 			var prefix = a.prefix = qName.slice(0,nsp);
 			var localName = qName.slice(nsp+1);
@@ -300,7 +362,7 @@ function appendElement(source,elStartEnd,el,selfClosed,entityReplacer,contentHan
 	contentHandler.startElement(ns,localName,tagName,el);
 	//endPrefixMapping and startPrefixMapping have not any help for dom builder
 	//localNSMap = null
-	if(selfClosed){
+	if(el.closed){
 		contentHandler.endElement(ns,localName,tagName);
 		if(localNSMap){
 			for(prefix in localNSMap){
@@ -312,10 +374,6 @@ function appendElement(source,elStartEnd,el,selfClosed,entityReplacer,contentHan
 		el.localNSMap = localNSMap;
 		parseStack.push(el);
 	}
-	if(!selfClosed && ns === 'http://www.w3.org/1999/xhtml'){
-		return parseHtmlSpecialContent(source,elStartEnd,tagName,entityReplacer,contentHandler,lexHandler)
-	}
-	return elStartEnd+1;
 }
 function parseHtmlSpecialContent(source,elStartEnd,tagName,entityReplacer,contentHandler,lexHandler){
 	if(/^(?:script|textarea)$/i.test(tagName)){
@@ -415,6 +473,18 @@ function ElementAttributes(source){
 	
 }
 ElementAttributes.prototype = {
+	setTagName:function(tagName){
+		if(!tagNamePattern.test(tagName)){
+			throw new Error('invalid tagName:'+tagName)
+		}
+		this.tagName = tagName
+	},
+	add:function(qName,value,offset){
+		if(!tagNamePattern.test(qName)){
+			throw new Error('invalid attribute:'+qName)
+		}
+		this[this.length++] = {qName:qName,value:value,offset:offset}
+	},
 	length:0,
 	getLocalName:function(i){return this[i].localName},
 	getOffset:function(i){return this[i].offset},

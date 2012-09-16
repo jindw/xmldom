@@ -63,9 +63,7 @@ wows.describe('errorHandle').addBatch({
     	var doc = parser.parseFromString('<html><body title="1<2"><table>&lt;;test</body></body></html>', 'text/html');
 	}catch(e){
 		console.log(e);
-		error = error.join(' ');
-		console.assert(error.indexOf('lineNumber')>0,'lineNumber must record:'+error)
-		console.assert(error.indexOf('columnNumber')>0,'columnNumber must record:'+error)
+		console.assert(/\n@#\[line\:\d+,col\:\d+\]/.test(error.join(' ')),'line,col must record:'+error)
 		return;
 	}
 	console.assert(false,doc+' should be null');

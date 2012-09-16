@@ -35,11 +35,16 @@ function check(data,doc){
 }
 DOMParser.prototype.parseFromString = function(data,mimeType){
 	var doc = oldParser.apply(this,arguments);
-	if(!/\/x?html?\b/.test(mimeType)){
-		try{
-		check(data,doc);
-		}catch(e){console.dir(e)}
+	function ck(){
+		if(!/\/x?html?\b/.test(mimeType)){
+			try{
+			check(data,doc);
+			}catch(e){console.dir(e)}
+		}
 	}
+	if(this.options.checkLater){
+	setTimeout(ck,1);
+	}else{ck()}
 	return doc;
 }
 function include(){
@@ -49,7 +54,6 @@ function include(){
 		require(file);
 	}
 }
-console.log('test dom:')
 include('./dom','./parse-element','./node','./namespace','./html/normalize'
 		,'./error','./locator'
 		,'./big-file-performance'

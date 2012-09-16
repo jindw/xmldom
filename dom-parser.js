@@ -1,7 +1,7 @@
 function DOMParser(options){
 	this.options = 
-			options == true?{locator:{}}://To the version (0.1.12) compatible
-			options ||{};
+			options != true && //To the version (0.1.12) compatible
+			options ||{locator:{}};
 	
 }
 DOMParser.prototype.parseFromString = function(source,mimeType){
@@ -31,14 +31,11 @@ function buildErrorHandler(errorImpl,locator){
 	var errorHandler = {}
 	var isCallback = errorImpl instanceof Function;
 	locator = locator||{}
-	function format(msg){
-		return msg+'@lineNumber:'+locator.lineNumber+',columnNumber:'+locator.columnNumber
-	}
 	function build(key){
 		var fn = errorImpl[key];
 		if(!fn){
 			if(isCallback){
-				fn = errorImpl
+				fn = errorImpl.length == 2?function(msg){errorImpl(key,msg)}:errorImpl;
 			}else{
 				var i=arguments.length;
 				while(--i){
@@ -48,13 +45,12 @@ function buildErrorHandler(errorImpl,locator){
 				}
 			}
 		}
-		if(!fn){
-			console.log(errorImpl,key)
-		}
-		errorHandler[key] = fn.length==2?function(msg){fn(key,format(msg));}:function(msg){fn(key+':'+format(msg));}
+		errorHandler[key] = fn && function(msg){
+			fn(msg+_locator(locator));
+		}||function(){};
 	}
-	build('warning','fatalError','error','warn');
-	build('error','fatalError','warn','warning');
+	build('warning','warn');
+	build('error','warn','warning');
 	build('fatalError','warn','warning','error');
 	return errorHandler;
 }
@@ -97,7 +93,12 @@ DOMHandler.prototype = {
 	        var namespaceURI = attrs.getURI(i);
 	        var value = attrs.getValue(i);
 	        var qName = attrs.getQName(i);
-	        el.setAttributeNS(namespaceURI, qName, value);
+			var attr = doc.createAttributeNS(namespaceURI, qName);
+			if( attr.getOffset){
+				position(attr.getOffset(1),attr)
+			}
+			attr.value = attr.nodeValue = value;
+			el.setAttributeNode(attr)
 	    }
 	},
 	endElement:function(namespaceURI, localName, qName) {
@@ -118,6 +119,7 @@ DOMHandler.prototype = {
 	},
 	characters:function(chars, start, length) {
 		chars = _toString.apply(this,arguments)
+		//console.log(chars)
 		if(this.currentElement && chars){
 			if (this.cdata) {
 				var charNode = this.document.createCDATASection(chars);
@@ -168,26 +170,29 @@ DOMHandler.prototype = {
 	 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
 	 */
 	warning:function(error) {
-		console.warn(error,this.locator||'set locator for source position');
+		console.warn(error,_locator(this.locator));
 	},
 	error:function(error) {
-		console.error(error,this.locator||'set locator for source position');
+		console.error(error,_locator(this.locator));
 	},
 	fatalError:function(error) {
-		console.error(error,this.locator||'set locator for source position');
+		console.error(error,_locator(this.locator));
 	    throw error;
 	}
 }
-
+function _locator(l){
+	if(l){
+		return '\n@'+(l.systemId ||'')+'#[line:'+l.lineNumber+',col:'+l.columnNumber+']'
+	}
+}
 function _toString(chars,start,length){
-	if(typeof chars != 'string' && !(chars instanceof String)){
-		//print('@@@@@\n',chars.length >= start+length);
-		if(chars.length >= start+length){
+	if(typeof chars == 'string'){
+		return chars.substr(start,length)
+	}else{//java sax connect width xmldom on rhino(what about: "? && !(chars instanceof String)")
+		if(chars.length >= start+length || start){
 			return new java.lang.String(chars,start,length)+'';
 		}
 		return chars;
-	}else{
-		return chars.substr(start,length)
 	}
 }
 

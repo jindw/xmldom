@@ -8,10 +8,9 @@ try{
 }catch(e){
 }
 
-
 function xmldom(data){
 	console.time('xmldom');
-	var doc = new DOMParser().parseFromString(data);
+	var doc = new DOMParser({locator:{},checkLater:true}).parseFromString(data);
 	console.timeEnd('xmldom');
 	doc.toString = function(){
 		return new XMLSerializer().serializeToString(doc);
@@ -80,11 +79,11 @@ wows.describe('XML Node Parse').addBatch({
 		var doc3 = libxml(data);
 		var t4 = new Date();
 		var xmldomTime = t2-t1;
-		var domjsTime = t3-t1;
+		var domjsTime = t3-t2;
 		console.assert(domjsTime>xmldomTime,'xmldom performance must more height!!')
 		
 		
-		
+		doc1 = doc1.cloneNode(true);
 		addAttributes(doc1.documentElement);
 		
 		data = doc1.toString();
@@ -97,7 +96,7 @@ wows.describe('XML Node Parse').addBatch({
 		var doc3 = libxml(data);
 		var t4 = new Date();
 		var xmldomTime = t2-t1;
-		var domjsTime = t3-t1;
+		var domjsTime = t3-t2;
 		console.assert(domjsTime>xmldomTime,'xmldom performance must more height!!')
 		function xmlReplace(a,v){
 			switch(v){
@@ -111,8 +110,8 @@ wows.describe('XML Node Parse').addBatch({
 			}
 			}
 		}
-		xmldomresult = (domjs(doc1+'')+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[([\s\S]*)\]\]>/g,xmlReplace)
-		domjsresult = (doc2+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[([\s\S]*)\]\]>/g,xmlReplace)
+		xmldomresult = (domjs(doc1+'')+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[([\s\S]*?)\]\]>/g,xmlReplace)
+		domjsresult = (doc2+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[([\s\S]*?)\]\]>/g,xmlReplace)
 		data = xmldomresult;
 		//console.log(data.substring(100,200))
 		
@@ -125,7 +124,7 @@ wows.describe('XML Node Parse').addBatch({
 		var doc3 = libxml(data);
 		var t4 = new Date();
 		var xmldomTime = t2-t1;
-		var domjsTime = t3-t1;
+		var domjsTime = t3-t2;
 		console.assert(domjsTime>xmldomTime,'xmldom performance must more height!!')
 		
 		//console.log(xmldomresult,domjsresult)

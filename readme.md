@@ -50,7 +50,7 @@ API Reference
 		 * youcan override the errorHandler for xml parser
 		 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
 		 */
-		errorHandler:{warning:callback,error:callback,failtError:callback}
+		errorHandler:{warning:callback,error:callback,fatalError:callback}
 	})
 		
 	```

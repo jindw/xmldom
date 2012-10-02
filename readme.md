@@ -204,8 +204,8 @@ DOM level 3 support:
 
 DOM extension by xmldom
 ---
- * [Node]
-	Source position extension; 
+ * [Node] Source position extension; 
+		
 		attribute:
 			//Numbered starting from '1'
 			lineNumber

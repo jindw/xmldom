@@ -6,28 +6,33 @@ function DOMParser(options){
 }
 DOMParser.prototype.parseFromString = function(source,mimeType){
 	var sax =  new XMLReader();
-	var handler = new DOMHandler();
 	var options = this.options;
-	var locator = options.locator;
+	var domBuilder = options.domBuilder || new DOMHandler();//contentHandler and LexicalHandler
 	var errorHandler = options.errorHandler;
+	var locator = options.locator;
 	var defaultNSMap = {};
 	var entityMap = {'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"}
 	if(locator){
-		handler.setDocumentLocator(locator)
+		domBuilder.setDocumentLocator(locator)
 	}
 	
-	sax.errorHandler = errorHandler? buildErrorHandler(errorHandler,locator) :handler;
-	sax.contentHandler = options.contentHandler || handler;
-	sax.lexicalHandler =options.lexicalHandler || handler;
+	sax.errorHandler = buildErrorHandler(errorHandler,domBuilder,locator);
+	sax.domBuilder = options.domBuilder || domBuilder;
 	if(/\/x?html?$/.test(mimeType)){
 		entityMap.nbsp = '\xa0';
 		entityMap.copy = '\xa9';
 		defaultNSMap['']= 'http://www.w3.org/1999/xhtml';
 	}
 	sax.parse(source,defaultNSMap,entityMap);
-	return handler.document;
+	return domBuilder.document;
 }
-function buildErrorHandler(errorImpl,locator){
+function buildErrorHandler(errorImpl,domBuilder,locator){
+	if(!errorImpl){
+		if(domBuilder instanceof DOMHandler){
+			return domBuilder;
+		}
+		errorImpl = domBuilder ;
+	}
 	var errorHandler = {}
 	var isCallback = errorImpl instanceof Function;
 	locator = locator||{}

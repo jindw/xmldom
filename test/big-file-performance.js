@@ -10,7 +10,7 @@ try{
 
 function xmldom(data){
 	console.time('xmldom');
-	var doc = new DOMParser({locator:{},checkLater:true}).parseFromString(data);
+	var doc = new DOMParser({locator:null,checkLater:true}).parseFromString(data);
 	console.timeEnd('xmldom');
 	doc.toString = function(){
 		return new XMLSerializer().serializeToString(doc);

@@ -34,6 +34,16 @@ wows.describe('html normalizer').addBatch({
     	var dom = new DOMParser().parseFromString('<div a=& a="&\'\'" b/>','text/html');
     	console.assert(dom == '<div a="&amp;\'\'" b="b"></div>',dom+'')
 	},
+    'attrQute': function () { 
+    	var dom = new DOMParser().parseFromString('<html test="123"/>','text/html');
+    	console.assert(dom == '<html test="123"></html>',dom+'')
+    	
+//		var dom = new DOMParser().parseFromString('<r><Label onClick="doClick..>Hello, World</Label></r>','text/html');
+//    	console.assert(dom == '<r><Label onClick="doClick..">Hello, World</Label></r>',dom+'!!')
+//		
+		var dom = new DOMParser().parseFromString('<Label onClick=doClick..">Hello, World</Label>','text/html');
+    	console.assert(dom == '<Label onClick="doClick..">Hello, World</Label>',dom+'')
+	},
 	"unclosed":function(){
     	var dom = new DOMParser().parseFromString('<html><meta><link><img><br><hr><input></html>','text/html');
     	console.assert(dom == '<html><meta/><link/><img/><br/><hr/><input/></html>',dom+'')

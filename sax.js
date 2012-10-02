@@ -23,15 +23,15 @@ function XMLReader(){
 
 XMLReader.prototype = {
 	parse:function(source,defaultNSMap,entityMap){
-		var contentHandler = this.contentHandler;
-		contentHandler.startDocument();
+		var domBuilder = this.domBuilder;
+		domBuilder.startDocument();
 		_copy(defaultNSMap ,defaultNSMap = {})
 		parse(source,defaultNSMap,entityMap,
-				contentHandler,this.lexicalHandler,this.errorHandler);
-		contentHandler.endDocument();
+				domBuilder,this.errorHandler);
+		domBuilder.endDocument();
 	}
 }
-function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,errorHandler){
+function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 	function entityReplacer(a){
 		var k = a.slice(1,-1);
 		if(k in entityMap){
@@ -46,7 +46,7 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 	function appendText(end){//has some bugs
 		var xt = source.substring(start,end).replace(/&#?\w+;/g,entityReplacer);
 		locator&&position(start);
-		contentHandler.characters(xt,0,end-start);
+		domBuilder.characters(xt,0,end-start);
 		start = end
 	}
 	function position(start,m){
@@ -61,7 +61,7 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 	var startPos = 0;
 	var endPos = 0;
 	var linePattern = /.+(?:\r\n?|\n)|.*$/g
-	var locator = contentHandler.locator;
+	var locator = domBuilder.locator;
 	
 	var parseStack = [{currentNSMap:defaultNSMapCopy}]
 	var closeMap = {};
@@ -81,10 +81,10 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 	        if(config.tagName != tagName){
 	            errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
 	        }
-			contentHandler.endElement(config.uri,config.localName,tagName);
+			domBuilder.endElement(config.uri,config.localName,tagName);
 			if(localNSMap){
 				for(var prefix in localNSMap){
-					contentHandler.endPrefixMapping(prefix) ;
+					domBuilder.endPrefixMapping(prefix) ;
 				}
 			}
 			end++;
@@ -92,11 +92,11 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 			// end elment
 		case '?':// <?...?>
 			locator&&position(i);
-			end = parseInstruction(source,i,lexHandler);
+			end = parseInstruction(source,i,domBuilder);
 			break;
 		case '!':// <!doctype,<![CDATA,<!--
 			locator&&position(i);
-			end = parseDCC(source,i,contentHandler,lexHandler);
+			end = parseDCC(source,i,domBuilder);
 			break;
 		default:
 			if(i<0){
@@ -122,11 +122,11 @@ function parse(source,defaultNSMapCopy,entityMap,contentHandler,lexHandler,error
 						copyLocator(backup,locator);
 					}
 					el.closed = el.closed||fixSelfClosed(source,end,el.tagName,closeMap);
-					appendElement(el,contentHandler,parseStack);
+					appendElement(el,domBuilder,parseStack);
 					
 					
 					if(el.uri === 'http://www.w3.org/1999/xhtml' && !el.closed){
-						end = parseHtmlSpecialContent(source,end,el.tagName,entityReplacer,contentHandler,lexHandler)
+						end = parseHtmlSpecialContent(source,end,el.tagName,entityReplacer,domBuilder)
 					}else{
 						end++;
 					}
@@ -153,7 +153,7 @@ function copyLocator(f,t){
 }
 
 /**
- * @see #appendElement(source,elStartEnd,el,selfClosed,entityReplacer,contentHandler,lexHandler,parseStack);
+ * @see #appendElement(source,elStartEnd,el,selfClosed,entityReplacer,domBuilder,parseStack);
  * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
  */
 function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
@@ -188,6 +188,14 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 					//fatalError: no end quot match
 					throw new Error('attribute value no end \''+c+'\' match');
 				}
+			}else if(s == S_V){
+				value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
+				//console.log(attrName,value,start,p)
+				el.add(attrName,value,start);
+				//console.dir(el)
+				errorHandler.warning('attribute "'+attrName+'" missed start quot('+c+')!!');
+				start = p+1;
+				s = S_E
 			}else{
 				//fatalError: no equal before
 				throw new Error('attribute value must after "="');
@@ -305,7 +313,7 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 /**
  * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
  */
-function appendElement(el,contentHandler,parseStack){
+function appendElement(el,domBuilder,parseStack){
 	var tagName = el.tagName;
 	var localNSMap = null;
 	var currentNSMap = parseStack[parseStack.length-1].currentNSMap;
@@ -334,7 +342,7 @@ function appendElement(el,contentHandler,parseStack){
 			}
 			currentNSMap[nsPrefix] = localNSMap[nsPrefix] = value;
 			a.uri = 'http://www.w3.org/2000/xmlns/'
-			contentHandler.startPrefixMapping(nsPrefix, value) 
+			domBuilder.startPrefixMapping(nsPrefix, value) 
 		}
 	}
 	var i = el.length;
@@ -359,14 +367,14 @@ function appendElement(el,contentHandler,parseStack){
 	}
 	//no prefix element has default namespace
 	var ns = el.uri = currentNSMap[prefix || ''];
-	contentHandler.startElement(ns,localName,tagName,el);
+	domBuilder.startElement(ns,localName,tagName,el);
 	//endPrefixMapping and startPrefixMapping have not any help for dom builder
 	//localNSMap = null
 	if(el.closed){
-		contentHandler.endElement(ns,localName,tagName);
+		domBuilder.endElement(ns,localName,tagName);
 		if(localNSMap){
 			for(prefix in localNSMap){
-				contentHandler.endPrefixMapping(prefix) 
+				domBuilder.endPrefixMapping(prefix) 
 			}
 		}
 	}else{
@@ -375,7 +383,7 @@ function appendElement(el,contentHandler,parseStack){
 		parseStack.push(el);
 	}
 }
-function parseHtmlSpecialContent(source,elStartEnd,tagName,entityReplacer,contentHandler,lexHandler){
+function parseHtmlSpecialContent(source,elStartEnd,tagName,entityReplacer,domBuilder){
 	if(/^(?:script|textarea)$/i.test(tagName)){
 		var elEndStart =  source.indexOf('</'+tagName+'>',elStartEnd);
 		var text = source.substring(elStartEnd+1,elEndStart);
@@ -383,13 +391,13 @@ function parseHtmlSpecialContent(source,elStartEnd,tagName,entityReplacer,conten
 			if(/^script$/i.test(tagName)){
 				//if(!/\]\]>/.test(text)){
 					//lexHandler.startCDATA();
-					contentHandler.characters(text,0,text.length);
+					domBuilder.characters(text,0,text.length);
 					//lexHandler.endCDATA();
 					return elEndStart;
 				//}
 			}//}else{//text area
 				text = text.replace(/&#?\w+;/g,entityReplacer);
-				contentHandler.characters(text,0,text.length);
+				domBuilder.characters(text,0,text.length);
 				return elEndStart;
 			//}
 			
@@ -410,14 +418,14 @@ function fixSelfClosed(source,elStartEnd,tagName,closeMap){
 function _copy(source,target){
 	for(var n in source){target[n] = source[n]}
 }
-function parseDCC(source,start,contentHandler,lexHandler){//sure start with '<!'
+function parseDCC(source,start,domBuilder){//sure start with '<!'
 	var next= source.charAt(start+2)
 	switch(next){
 	case '-':
 		if(source.charAt(start + 3) === '-'){
 			var end = source.indexOf('-->',start+4);
 			//append comment source.substring(4,end)//<!--
-			lexHandler.comment(source,start+4,end-start-4);
+			domBuilder.comment(source,start+4,end-start-4);
 			return end+3;
 		}else{
 			//error
@@ -426,9 +434,9 @@ function parseDCC(source,start,contentHandler,lexHandler){//sure start with '<!'
 	case '[':
 		if(source.substr(start+3,6) == 'CDATA['){
 			var end = source.indexOf(']]>',start+9);
-			lexHandler.startCDATA();
-			contentHandler.characters(source,start+9,end-start-9);
-			lexHandler.endCDATA() 
+			domBuilder.startCDATA();
+			domBuilder.characters(source,start+9,end-start-9);
+			domBuilder.endCDATA() 
 			return end+3;
 		}
 		//<!DOCTYPE
@@ -440,8 +448,8 @@ function parseDCC(source,start,contentHandler,lexHandler){//sure start with '<!'
 			var pubid = len>3 && /^public$/i.test(matchs[2][0]) && matchs[3][0]
 			var sysid = len>4 && matchs[4][0];
 			var lastMatch = matchs[len-1]
-			lexHandler.startDTD(name,pubid,sysid);
-			lexHandler.endDTD();
+			domBuilder.startDTD(name,pubid,sysid);
+			domBuilder.endDTD();
 			
 			return lastMatch.index+lastMatch[0].length
 		}
@@ -451,13 +459,13 @@ function parseDCC(source,start,contentHandler,lexHandler){//sure start with '<!'
 
 
 
-function parseInstruction(source,start,contentHandler){
+function parseInstruction(source,start,domBuilder){
 	var end = source.indexOf('?>',start);
 	if(end){
 		var match = source.substring(start,end).match(/^<\?(\S*)\s*([\s\S]*?)\s*$/);
 		if(match){
 			var len = match[0].length;
-			contentHandler.processingInstruction(match[1], match[2]) ;
+			domBuilder.processingInstruction(match[1], match[2]) ;
 			return end+2;
 		}else{//error
 			return -1;

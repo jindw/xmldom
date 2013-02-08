@@ -501,6 +501,9 @@ function _insertBefore(parentNode,newChild,nextChild){
 	}
 	if(newChild.nodeType === DOCUMENT_FRAGMENT_NODE){
 		var newFirst = newChild.firstChild;
+		if (newFirst == null) {
+			return newChild;
+		}
 		var newLast = newChild.lastChild;
 	}else{
 		newFirst = newLast = newChild;

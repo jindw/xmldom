@@ -247,7 +247,7 @@ function appendElement (hander,node) {
 
 if(typeof require == 'function'){
 	var XMLReader = require('./sax').XMLReader;
-	var DOMImplementation = require('./dom').DOMImplementation;
+	var DOMImplementation = exports.DOMImplementation = require('./dom').DOMImplementation;
 	exports.XMLSerializer = require('./dom').XMLSerializer ;
 	exports.DOMParser = DOMParser;
 }

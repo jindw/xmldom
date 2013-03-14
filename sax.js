@@ -431,7 +431,7 @@ function parseDCC(source,start,domBuilder){//sure start with '<!'
 			//error
 			return -1;
 		}
-	case '[':
+	default:
 		if(source.substr(start+3,6) == 'CDATA['){
 			var end = source.indexOf(']]>',start+9);
 			domBuilder.startCDATA();

@@ -919,6 +919,9 @@ function serializeToString(node,buf){
 		var nodeName = node.tagName;
 		var isHTML = htmlns === node.namespaceURI
 		buf.push('<',nodeName);
+		if (node.namespaceURI) {
+			buf.push(' xmlns="',node.namespaceURI.replace(/[<&"]/g,_xmlEncoder),'"');
+		}
 		for(var i=0;i<len;i++){
 			serializeToString(attrs.item(i),buf,isHTML);
 		}

@@ -7,10 +7,10 @@
   "homepage": "https://github.com/jindw/xmldom",
   "repository": {"type": "git","url": "git://github.com/jindw/xmldom.git"},
   "main": "./dom-parser.js",
-  "scripts": {"test": "./test"},
+  "scripts" : { "test": "proof test */*/*.t.js" },
   "engines": {"node": ">=0.1"},
   "dependencies": {},
-  "devDependencies": {},
+  "devDependencies": { "proof": "0.0.28" },
   "maintainers": [{"name": "jindw","email": "jindw@xidea.org","url": "http://www.xidea.org"}],
   "contributors": [
     {"name" : "Yaron Naveh","email" : "yaronn01@gmail.com","web" : "http://webservices20.blogspot.com/"},

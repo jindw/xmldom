@@ -15,3 +15,4 @@ branches:
 
 before_install:
   - npm install
+  - npm install istanbul coveralls

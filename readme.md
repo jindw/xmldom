@@ -1,8 +1,8 @@
-Introduction
--------
-Another xml parser for nodejs/browser/rhino for java.
-Fully compatible with `W3C DOM level2`; and some compatible with `level3`.
-support `DOMParser` and `XMLSerializer` interface such as in browser.
+# XMLDOM [![Build Status](https://secure.travis-ci.org/bigeasy/xmldom.png?branch=master)](http://travis-ci.org/bigeasy/xmldom) [![Coverage Status](https://coveralls.io/repos/bigeasy/xmldom/badge.png?branch=master)](https://coveralls.io/r/bigeasy/xmldom) [![NPM version](https://badge.fury.io/js/xmldom.png)](http://badge.fury.io/js/xmldom)
+
+A JavaScript implementation of W3C DOM for Node.js, Rhino and the browser. Fully
+compatible with `W3C DOM level2`; and some compatible with `level3`. Supports
+`DOMParser` and `XMLSerializer` interface such as in browser.
 
 Install:
 -------

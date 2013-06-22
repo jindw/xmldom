@@ -18,7 +18,8 @@ var S_E = 5;//attr value end and no space(quot end)
 var S_S = 6;//(attr value end || tag end ) && (space offer)
 var S_C = 7;//closed el<el />
 
-function XMLReader(){
+function XMLReader(options){
+	this.options = options
 }
 
 XMLReader.prototype = {
@@ -27,11 +28,11 @@ XMLReader.prototype = {
 		domBuilder.startDocument();
 		_copy(defaultNSMap ,defaultNSMap = {})
 		parse(source,defaultNSMap,entityMap,
-				domBuilder,this.errorHandler);
+				domBuilder,this.errorHandler, this.options);
 		domBuilder.endDocument();
 	}
 }
-function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
+function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler, options){
   function fixedFromCharCode(code) {
 		// String.prototype.fromCharCode does not supports
 		// > 2 bytes unicode chars directly
@@ -59,7 +60,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 	function appendText(end){//has some bugs
 		var xt = source.substring(start,end).replace(/&#?\w+;/g,entityReplacer);
 		locator&&position(start);
-		domBuilder.characters(xt,0,end-start);
+		if (!options.ignoreWhiteSpace || xt.trim()!="") domBuilder.characters(xt,0,end-start);
 		start = end
 	}
 	function position(start,m){

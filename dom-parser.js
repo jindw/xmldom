@@ -4,9 +4,9 @@ function DOMParser(options){
 			options ||{locator:{}};
 	
 }
-DOMParser.prototype.parseFromString = function(source,mimeType){
-	var sax =  new XMLReader();
+DOMParser.prototype.parseFromString = function(source,mimeType){	
 	var options = this.options;
+	var sax =  new XMLReader(options);
 	var domBuilder = options.domBuilder || new DOMHandler();//contentHandler and LexicalHandler
 	var errorHandler = options.errorHandler;
 	var locator = options.locator;

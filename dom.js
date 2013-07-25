@@ -1078,26 +1078,21 @@ function __set__(object,key,value){
 try{
 	if(Object.defineProperty){
 
-      function defineInnerHtml(clazz) {
-         Object.defineProperty(clazz.prototype, 'innerHTML', {
-            get: function() {
-               var res = [];
-               for(var i = 0, l = this.childNodes.length; i < l; i++) {
-                  res[i] = this.childNodes[i].toString();
-               }
-               return res.join('\n');
-            },
-            set: function(value) {
-               var parser = new (require('./dom-parser').DOMParser)(),
-                   doc = parser.parseFromString(value, 'text/html'),
-                   ownNode = this.ownerDocument.importNode(doc.documentElement, true);
-               this.appendChild(ownNode);
-            }
-         });
-      }
-
-      defineInnerHtml(Element);
-      defineInnerHtml(DocumentFragment);
+         	Object.defineProperty(Element.prototype, 'innerHTML', {
+            		get: function() {
+               			var res = [];
+               			for(var i = 0, l = this.childNodes.length; i < l; i++) {
+                  			res[i] = this.childNodes[i].toString();
+               			}
+               			return res.join('\n');
+            		},
+            		set: function(value) {
+               			var parser = new (require('./dom-parser').DOMParser)(),
+                   		doc = parser.parseFromString(value, 'text/html'),
+                   		ownNode = this.ownerDocument.importNode(doc.documentElement, true);
+               			this.appendChild(ownNode);
+            		}
+         	});
 
 		Object.defineProperty(LiveNodeList.prototype,'length',{
 			get:function(){

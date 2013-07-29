@@ -1087,10 +1087,16 @@ try{
                			return res.join('\n');
             		},
             		set: function(value) {
-               			var parser = new (require('./dom-parser').DOMParser)(),
-                   		doc = parser.parseFromString(value, 'text/html'),
-                   		ownNode = this.ownerDocument.importNode(doc.documentElement, true);
-               			this.appendChild(ownNode);
+							var parser = new (require('./dom-parser').DOMParser)();
+							var doc = parser.parseFromString("<div>" + value + "</div>", 'text/html');
+							var ownNode = this.ownerDocument.importNode(doc.documentElement, true);
+
+							while (this.firstChild){
+								this.removeChild(this.firstChild);
+							}
+							while (ownNode.firstChild){
+								this.appendChild(ownNode.firstChild);
+							}
             		}
          	});
 

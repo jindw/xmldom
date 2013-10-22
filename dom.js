@@ -501,6 +501,9 @@ function _insertBefore(parentNode,newChild,nextChild){
 	}
 	if(newChild.nodeType === DOCUMENT_FRAGMENT_NODE){
 		var newFirst = newChild.firstChild;
+		if (newFirst == null) {
+			return newChild;
+		}
 		var newLast = newChild.lastChild;
 	}else{
 		newFirst = newLast = newChild;
@@ -989,11 +992,11 @@ function importNode(doc,node,deep){
 	case ELEMENT_NODE:
 		node2 = node.cloneNode(false);
 		node2.ownerDocument = doc;
-		var attrs = node2.attributes;
-		var len = attrs.length;
-		for(var i=0;i<len;i++){
-			node2.setAttributeNodeNS(importNode(doc,attrs.item(i),deep));
-		}
+		//var attrs = node2.attributes;
+		//var len = attrs.length;
+		//for(var i=0;i<len;i++){
+			//node2.setAttributeNodeNS(importNode(doc,attrs.item(i),deep));
+		//}
 	case DOCUMENT_FRAGMENT_NODE:
 		break;
 	case ATTRIBUTE_NODE:

@@ -19,6 +19,7 @@ var S_S = 6;//(attr value end || tag end ) && (space offer)
 var S_C = 7;//closed el<el />
 
 function XMLReader(){
+	
 }
 
 XMLReader.prototype = {
@@ -32,12 +33,25 @@ XMLReader.prototype = {
 	}
 }
 function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
+  function fixedFromCharCode(code) {
+		// String.prototype.fromCharCode does not supports
+		// > 2 bytes unicode chars directly
+		if (code > 0xffff) {
+			code -= 0x10000;
+			var surrogate1 = 0xd800 + (code >> 10)
+				, surrogate2 = 0xdc00 + (code & 0x3ff);
+
+			return String.fromCharCode(surrogate1, surrogate2);
+		} else {
+			return String.fromCharCode(code);
+		}
+	}
 	function entityReplacer(a){
 		var k = a.slice(1,-1);
 		if(k in entityMap){
 			return entityMap[k]; 
 		}else if(k.charAt(0) === '#'){
-			return String.fromCharCode(parseInt(k.substr(1).replace('x','0x')))
+			return fixedFromCharCode(parseInt(k.substr(1).replace('x','0x')))
 		}else{
 			errorHandler.error('entity not found:'+a);
 			return a;

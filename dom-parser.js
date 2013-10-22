@@ -4,9 +4,9 @@ function DOMParser(options){
 			options ||{locator:{}};
 	
 }
-DOMParser.prototype.parseFromString = function(source,mimeType){
-	var sax =  new XMLReader();
+DOMParser.prototype.parseFromString = function(source,mimeType){	
 	var options = this.options;
+	var sax =  new XMLReader();
 	var domBuilder = options.domBuilder || new DOMHandler();//contentHandler and LexicalHandler
 	var errorHandler = options.errorHandler;
 	var locator = options.locator;
@@ -247,7 +247,7 @@ function appendElement (hander,node) {
 
 if(typeof require == 'function'){
 	var XMLReader = require('./sax').XMLReader;
-	var DOMImplementation = require('./dom').DOMImplementation;
+	var DOMImplementation = exports.DOMImplementation = require('./dom').DOMImplementation;
 	exports.XMLSerializer = require('./dom').XMLSerializer ;
 	exports.DOMParser = DOMParser;
 }

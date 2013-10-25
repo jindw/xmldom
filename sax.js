@@ -88,7 +88,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 		switch(source.charAt(i+1)){
 		case '/':
 			var end = source.indexOf('>',i+3);
-			var tagName = source.substring(i+2,end);
+			var tagName = source.substring(i+2,end).trim();
 			var config = parseStack.pop();
 			var localNSMap = config.localNSMap;
 			
@@ -424,7 +424,7 @@ function fixSelfClosed(source,elStartEnd,tagName,closeMap){
 	var pos = closeMap[tagName];
 	if(pos == null){
 		//console.log(tagName)
-		pos = closeMap[tagName] = source.lastIndexOf('</'+tagName+'>')
+		pos = closeMap[tagName] = source.lastIndexOf('</'+tagName)
 	}
 	return pos<elStartEnd;
 	//} 

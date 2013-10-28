@@ -1,22 +1,40 @@
 {
-  "name": "xmldom",
-  "version": "0.1.16",
-  "description": "A W3C Standard XML DOM(Level2 CORE) implementation and parser(DOMParser/XMLSerializer).",
+  "name": "tensor-xmldom",
+  "version": "0.1.17",
+  "description": "Tensor's fork of a xmldom library by jindw - a W3C Standard XML DOM(Level2 CORE) implementation and parser(DOMParser/XMLSerializer).",
   "keywords": ["w3c","dom","xml","parser","javascript","DOMParser","XMLSerializer"],
   "author": "jindw <jindw@xidea.org> (http://www.xidea.org)",
-  "homepage": "https://github.com/jindw/xmldom",
-  "repository": {"type": "git","url": "git://github.com/jindw/xmldom.git"},
+  "homepage": "https://github.com/tensor-dev/tensor-xmldom",
+  "repository": {
+     "type": "git",
+     "url": "git@github.com:tensor-dev/tensor-xmldom.git"
+  },
   "main": "./dom-parser.js",
-  "scripts" : { "test": "proof platform win32 && proof test */*/*.t.js || t/test" },
-  "engines": {"node": ">=0.1"},
+  "scripts" : {
+     "test": "proof platform win32 && proof test */*/*.t.js || t/test"
+  },
+  "engines": {
+     "node": ">=0.1"
+  },
   "dependencies": {},
-  "devDependencies": { "proof": "0.0.28" },
-  "maintainers": [{"name": "jindw","email": "jindw@xidea.org","url": "http://www.xidea.org"}],
+  "devDependencies": {
+     "proof": "0.0.28"
+  },
+  "maintainers": [{
+     "name": "Oleg Elifantiev",
+     "email": "oleg@elifantiev.ru",
+     "url": "http://elifantiev.ru"
+  }],
   "contributors": [
     {"name" : "Yaron Naveh","email" : "yaronn01@gmail.com","web" : "http://webservices20.blogspot.com/"},
     {"name" : "Harutyun Amirjanyan","email" : "amirjanyan@gmail.com","web" : "https://github.com/nightwing"},
     {"name" : "Alan Gutierrez","email" : "alan@prettyrobots.com","web" : "http://www.prettyrobots.com/"}
   ],
-  "bugs": {"email": "jindw@xidea.org","url": "http://github.com/jindw/xmldom/issues"},
-  "licenses": [{"type": "LGPL","url": "http://www.gnu.org/licenses/lgpl.html"}]
+  "bugs": {
+     "url": "https://github.com/tensor-dev/tensor-xmldom/issues"
+  },
+  "licenses": [{
+     "type": "LGPL",
+     "url": "http://www.gnu.org/licenses/lgpl.html"
+  }]
 }

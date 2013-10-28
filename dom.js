@@ -1078,7 +1078,7 @@ function __set__(object,key,value){
 try{
 	if(Object.defineProperty){
 
-		var parser = new (require('./dom-parser').DOMParser)();
+
 
      	Object.defineProperty(Element.prototype, 'innerHTML', {
     		get: function() {
@@ -1089,7 +1089,10 @@ try{
        			return res.join('\n');
     		},
     		set: function(value) {
-				var doc, ownNode;
+            var
+               parser = new (require('./dom-parser').DOMParser)(),
+				   doc, ownNode;
+
 				try {
 					doc = parser.parseFromString("<div>" + value + "</div>", 'text/html');
 				} catch(e) {

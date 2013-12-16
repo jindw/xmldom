@@ -352,7 +352,9 @@ function appendElement(el,domBuilder,parseStack){
 		if(nsPrefix !== false){//hack!!
 			if(localNSMap == null){
 				localNSMap = {}
+				//console.log(currentNSMap,0)
 				_copy(currentNSMap,currentNSMap={})
+				//console.log(currentNSMap,1)
 			}
 			currentNSMap[nsPrefix] = localNSMap[nsPrefix] = value;
 			a.uri = 'http://www.w3.org/2000/xmlns/'
@@ -368,6 +370,8 @@ function appendElement(el,domBuilder,parseStack){
 				a.uri = 'http://www.w3.org/XML/1998/namespace';
 			}if(prefix !== 'xmlns'){
 				a.uri = currentNSMap[prefix]
+				
+				//{console.log('###'+a.qName,domBuilder.locator.systemId+'',currentNSMap,a.uri)}
 			}
 		}
 	}
@@ -560,6 +564,3 @@ if(typeof require == 'function'){
 	exports.XMLReader = XMLReader;
 }
 
-if(typeof require == 'function'){
-exports.XMLReader=XMLReader;
-}

@@ -1,7 +1,5 @@
 function DOMParser(options){
-	this.options = 
-			options != true && //To the version (0.1.12) compatible
-			options ||{locator:{}};
+	this.options = options ||{locator:{}};
 	
 }
 DOMParser.prototype.parseFromString = function(source,mimeType){	
@@ -10,7 +8,7 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	var domBuilder = options.domBuilder || new DOMHandler();//contentHandler and LexicalHandler
 	var errorHandler = options.errorHandler;
 	var locator = options.locator;
-	var defaultNSMap = {};
+	var defaultNSMap = options.xmlns||{};
 	var entityMap = {'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"}
 	if(locator){
 		domBuilder.setDocumentLocator(locator)

@@ -254,6 +254,8 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 		/*xml space '\x20' | #x9 | #xD | #xA; */
 		case '\u0080':
 			c = ' ';
+		case '':
+			throw new Error('unexpected end of input')
 		default:
 			if(c<= ' '){//space
 				switch(s){

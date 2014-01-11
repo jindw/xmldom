@@ -30,7 +30,21 @@ XMLReader.prototype = {
 		parse(source,defaultNSMap,entityMap,
 				domBuilder,this.errorHandler);
 		domBuilder.endDocument();
-	}
+	},
+   parseAsync:function(source,defaultNSMap,entityMap, cb){
+      var domBuilder = this.domBuilder;
+      domBuilder.startDocument();
+      _copy(defaultNSMap ,defaultNSMap = {});
+      parseAsync(source,defaultNSMap,entityMap,domBuilder,this.errorHandler,function(err){
+         if(err){
+            cb(err);
+         }
+         else{
+            domBuilder.endDocument();
+            cb(null);
+         }
+      });
+   }
 }
 function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
   function fixedFromCharCode(code) {
@@ -158,6 +172,150 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 			start = end;
 		}
 	}
+}
+
+function parseAsync(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler,cb){
+   function fixedFromCharCode(code) {
+      // String.prototype.fromCharCode does not supports
+      // > 2 bytes unicode chars directly
+      if (code > 0xffff) {
+         code -= 0x10000;
+         var surrogate1 = 0xd800 + (code >> 10)
+            , surrogate2 = 0xdc00 + (code & 0x3ff);
+
+         return String.fromCharCode(surrogate1, surrogate2);
+      } else {
+         return String.fromCharCode(code);
+      }
+   }
+   function entityReplacer(a){
+      var k = a.slice(1,-1);
+      if(k in entityMap){
+         return entityMap[k];
+      }else if(k.charAt(0) === '#'){
+         return fixedFromCharCode(parseInt(k.substr(1).replace('x','0x')))
+      }else{
+         errorHandler.error('entity not found:'+a);
+         return a;
+      }
+   }
+   function appendText(end){//has some bugs
+      var xt = source.substring(start,end).replace(/&#?\w+;/g,entityReplacer);
+      locator&&position(start);
+      domBuilder.characters(xt,0,end-start);
+      start = end
+   }
+   function position(start,m){
+      while(start>=endPos && (m = linePattern.exec(source))){
+         startPos = m.index;
+         endPos = startPos + m[0].length;
+         locator.lineNumber++;
+         //console.log('line++:',locator,startPos,endPos)
+      }
+      locator.columnNumber = start-startPos+1;
+   }
+   var startPos = 0;
+   var endPos = 0;
+   var linePattern = /.+(?:\r\n?|\n)|.*$/g
+   var locator = domBuilder.locator;
+
+   var parseStack = [{currentNSMap:defaultNSMapCopy}]
+   var closeMap = {};
+   var start = 0;
+
+   function whileLoop(){
+      var i = source.indexOf('<',start);
+      if(i>start){
+         appendText(i);
+      }
+      switch(source.charAt(i+1)){
+         case '/':
+            var end = source.indexOf('>',i+3);
+            var tagName = source.substring(i+2,end).trim();
+            var config = parseStack.pop();
+            var localNSMap = config.localNSMap;
+
+            if(config.tagName != tagName){
+               errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+            }
+            domBuilder.endElement(config.uri,config.localName,tagName);
+            if(localNSMap){
+               for(var prefix in localNSMap){
+                  domBuilder.endPrefixMapping(prefix) ;
+               }
+            }
+            end++;
+            break;
+         // end elment
+         case '?':// <?...?>
+            locator&&position(i);
+            end = parseInstruction(source,i,domBuilder);
+            break;
+         case '!':// <!doctype,<![CDATA,<!--
+            locator&&position(i);
+            end = parseDCC(source,i,domBuilder);
+            break;
+         default:
+            if(i<0){
+               if(!source.substr(start).match(/^\s*$/)){
+                  errorHandler.error('source code out of document root');
+               }
+               cb(null);
+            }else{
+               try{
+                  locator&&position(i);
+                  var el = new ElementAttributes();
+                  //elStartEnd
+                  var end = parseElementStartPart(source,i,el,entityReplacer,errorHandler);
+                  var len = el.length;
+                  //position fixed
+                  if(len && locator){
+                     var backup = copyLocator(locator,{});
+                     for(var i = 0;i<len;i++){
+                        var a = el[i];
+                        position(a.offset);
+                        a.offset = copyLocator(locator,{});
+                     }
+                     copyLocator(backup,locator);
+                  }
+                  el.closed = el.closed||fixSelfClosed(source,end,el.tagName,closeMap);
+                  appendElement(el,domBuilder,parseStack);
+
+
+                  if(el.uri === 'http://www.w3.org/1999/xhtml' && !el.closed){
+                     end = parseHtmlSpecialContent(source,end,el.tagName,entityReplacer,domBuilder)
+                  }else{
+                     end++;
+                  }
+               }catch(e){
+                  errorHandler.error('element parse error: '+e);
+                  end = -1;
+               }
+            }
+
+      }
+      if(end<0){
+         //TODO: 这里有可能sax回退，有位置错误风险
+         appendText(i+1);
+      }else{
+         start = end;
+      }
+      process.nextTick(function(){
+         try{
+            whileLoop();
+         }
+         catch(e){
+            cb(e);
+         }
+      });
+   }
+
+   try{
+      whileLoop();
+   }
+   catch (e){
+      cb(e);
+   }
 }
 function copyLocator(f,t){
 	t.lineNumber = f.lineNumber;

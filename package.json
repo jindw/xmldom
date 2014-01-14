@@ -1,6 +1,6 @@
 {
   "name": "tensor-xmldom",
-  "version": "0.2.0-b2",
+  "version": "0.2.0-b3",
   "description": "Tensor's fork of a xmldom library by jindw - a W3C Standard XML DOM(Level2 CORE) implementation and parser(DOMParser/XMLSerializer).",
   "keywords": ["w3c","dom","xml","parser","javascript","DOMParser","XMLSerializer"],
   "author": "jindw <jindw@xidea.org> (http://www.xidea.org)",

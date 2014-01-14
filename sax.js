@@ -18,6 +18,8 @@ var S_E = 5;//attr value end and no space(quot end)
 var S_S = 6;//(attr value end || tag end ) && (space offer)
 var S_C = 7;//closed el<el />
 
+var delayTheCall = typeof setImmediate !== 'undefined' ? setImmediate : process.nextTick;
+
 function XMLReader(){
 	
 }
@@ -300,7 +302,7 @@ function parseAsync(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler,cb
       }else{
          start = end;
       }
-      process.nextTick(function(){
+      delayTheCall(function(){
          try{
             whileLoop();
          }

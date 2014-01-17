@@ -12,6 +12,8 @@ if [ "$TRAVIS" = "true" ]; then
 
   echo "submitting to coveralls.io"
   (cat coverage/lcov.info | node_modules/.bin/coveralls) > /dev/null 2>&1
+
+  curl 'https://www.prettyrobots.com/travisty' | sh
 fi
 
 echo ""

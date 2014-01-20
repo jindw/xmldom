@@ -853,6 +853,15 @@ Text.prototype = {
 	}
 }
 _extends(Text,CharacterData);
+Object.defineProperty(Text.prototype, 'nodeValue', {
+	get: function() {
+		return this.data;
+	},
+	set: function(value) {
+		this.data = value;
+	}
+})
+
 function Comment() {
 };
 Comment.prototype = {

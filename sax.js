@@ -110,7 +110,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 			break;
 		case '!':// <!doctype,<![CDATA,<!--
 			locator&&position(i);
-			end = parseDCC(source,i,domBuilder);
+			end = parseDCC(source,i,domBuilder,errorHandler);
 			break;
 		default:
 			if(i<0){
@@ -436,12 +436,13 @@ function fixSelfClosed(source,elStartEnd,tagName,closeMap){
 function _copy(source,target){
 	for(var n in source){target[n] = source[n]}
 }
-function parseDCC(source,start,domBuilder){//sure start with '<!'
+function parseDCC(source,start,domBuilder,errorHandler){//sure start with '<!'
 	var next= source.charAt(start+2)
 	switch(next){
 	case '-':
 		if(source.charAt(start + 3) === '-'){
 			var end = source.indexOf('-->',start+4);
+			if(end === -1) errorHandler.fatalError("Unclosed comment");
 			//append comment source.substring(4,end)//<!--
 			domBuilder.comment(source,start+4,end-start-4);
 			return end+3;

@@ -1,11 +1,13 @@
-var wows = require('vows');
+var wows = require('vows'),
+	assert = require('assert');
 var DOMParser = require('xmldom').DOMParser;
 
 
 wows.describe('errorHandle').addBatch({
-  'simple': function() {
+  'unclosedcomment': function() {
     var parser = new DOMParser();
-	var doc = parser.parseFromString('<!--', 'text/xml');
-	console.log(doc+'');
+	assert.throws(function () {
+		var doc = parser.parseFromString('<!--', 'text/xml');
+	}, 'Unclosed comment');
   }
 }).run();

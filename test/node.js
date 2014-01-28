@@ -86,6 +86,18 @@ wows.describe('XML Node Parse').addBatch({
 		var doc = new DOMParser().parseFromString(source,"text/xml");
     	var source2 = new XMLSerializer().serializeToString(doc);
     	console.assert(source == source2,source2);
+	},
+	'public id && sysid':function(){
+	  	var error = []
+	    var parser = new DOMParser({
+	    	locator:{},
+	    	errorHandler:function(msg){
+				error.push(msg);
+			}
+		});
+	    var doc = parser.parseFromString('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html/>', 'text/html');
+		console.log(doc+'')
+		
 	}
 }).run(); // Run it
 //var ELEMENT_NODE                = NodeType.ELEMENT_NODE                = 1;

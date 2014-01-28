@@ -42,10 +42,16 @@ API Reference
 	//errorHandler is supported
 	new DOMParser({
 		/**
-		 * youcan override the errorHandler for xml parser
+		 * locator is always need for error position info
+		 */
+		locator:{},
+		/**
+		 * you can override the errorHandler for xml parser
 		 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
 		 */
-		errorHandler:{warning:callback,error:callback,fatalError:callback}
+		errorHandler:{warning:function(w){console.warn(w)},error:callback,fatalError:callback}
+		//only callback model
+		//errorHandler:function(level,msg){console.log(level,msg)}
 	})
 		
 	```

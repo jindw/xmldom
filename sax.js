@@ -82,6 +82,15 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 	var start = 0;
 	while(true){
 		var i = source.indexOf('<',start);
+		if(i<0){
+			if(!source.substr(start).match(/^\s*$/)){
+				var doc = domBuilder.document;
+    			var text = doc.createTextNode(source.substr(start));
+    			doc.appendChild(text);
+    			domBuilder.currentElement = text;
+			}
+			return;
+		}
 		if(i>start){
 			appendText(i);
 		}
@@ -113,46 +122,41 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 			end = parseDCC(source,i,domBuilder,errorHandler);
 			break;
 		default:
-			if(i<0){
-				if(!source.substr(start).match(/^\s*$/)){
-					domBuilder.allText(source);
+			try{
+				locator&&position(i);
+				
+				var el = new ElementAttributes();
+				
+				//elStartEnd
+				var end = parseElementStartPart(source,i,el,entityReplacer,errorHandler);
+				var len = el.length;
+				//position fixed
+				if(len && locator){
+					var backup = copyLocator(locator,{});
+					for(var i = 0;i<len;i++){
+						var a = el[i];
+						position(a.offset);
+						a.offset = copyLocator(locator,{});
+					}
+					copyLocator(backup,locator);
 				}
-				return;
-			}else{
-				try{
-					locator&&position(i);
-					var el = new ElementAttributes();
-					//elStartEnd
-					var end = parseElementStartPart(source,i,el,entityReplacer,errorHandler);
-					var len = el.length;
-					//position fixed
-					if(len && locator){
-						var backup = copyLocator(locator,{});
-						for(var i = 0;i<len;i++){
-							var a = el[i];
-							position(a.offset);
-							a.offset = copyLocator(locator,{});
-						}
-						copyLocator(backup,locator);
+				if(!el.closed && fixSelfClosed(source,end,el.tagName,closeMap)){
+					el.closed = true;
+					if(!entityMap.nbsp){
+						errorHandler.warning('unclosed xml attribute');
 					}
-					if(!el.closed && fixSelfClosed(source,end,el.tagName,closeMap)){
-						el.closed = true;
-						if(!entityMap.nbsp){
-							errorHandler.warning('unclosed xml attribute');
-						}
-					}
-					appendElement(el,domBuilder,parseStack);
-					
-					
-					if(el.uri === 'http://www.w3.org/1999/xhtml' && !el.closed){
-						end = parseHtmlSpecialContent(source,end,el.tagName,entityReplacer,domBuilder)
-					}else{
-						end++;
-					}
-				}catch(e){
-					errorHandler.error('element parse error: '+e);
-					end = -1;
 				}
+				appendElement(el,domBuilder,parseStack);
+				
+				
+				if(el.uri === 'http://www.w3.org/1999/xhtml' && !el.closed){
+					end = parseHtmlSpecialContent(source,end,el.tagName,entityReplacer,domBuilder)
+				}else{
+					end++;
+				}
+			}catch(e){
+				errorHandler.error('element parse error: '+e);
+				end = -1;
 			}
 
 		}
@@ -238,6 +242,9 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 				throw new Error("attribute invalid close char('/')")
 			}
 			break;
+		case ''://end document
+			//throw new Error('unexpected end of input')
+			errorHandler.error('unexpected end of input');
 		case '>':
 			switch(s){
 			case S_TAG:
@@ -449,8 +456,12 @@ function parseDCC(source,start,domBuilder,errorHandler){//sure start with '<!'
 			var end = source.indexOf('-->',start+4);
 			if(end === -1) errorHandler.fatalError("Unclosed comment");
 			//append comment source.substring(4,end)//<!--
-			domBuilder.comment(source,start+4,end-start-4);
-			return end+3;
+			if(end>start){
+				domBuilder.comment(source,start+4,end-start-4);
+				return end+3;
+			}else{
+				return -1;
+			}
 		}else{
 			//error
 			return -1;
@@ -472,7 +483,8 @@ function parseDCC(source,start,domBuilder,errorHandler){//sure start with '<!'
 			var pubid = len>3 && /^public$/i.test(matchs[2][0]) && matchs[3][0]
 			var sysid = len>4 && matchs[4][0];
 			var lastMatch = matchs[len-1]
-			domBuilder.startDTD(name,pubid,sysid);
+			domBuilder.startDTD(name,pubid && pubid.replace(/^(['"])(.*?)\1$/,'$2'),
+					sysid && sysid.replace(/^(['"])(.*?)\1$/,'$2'));
 			domBuilder.endDTD();
 			
 			return lastMatch.index+lastMatch[0].length

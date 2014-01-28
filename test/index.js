@@ -57,6 +57,7 @@ function include(){
 include('./dom','./parse-element','./node','./namespace','./html/normalize'
 		,'./error','./locator'
 		,'./big-file-performance'
+		,"./xml-error"
 		)
 
 

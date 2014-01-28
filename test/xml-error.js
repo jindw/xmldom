@@ -36,6 +36,20 @@ vows.describe('errorHandle').addBatch({
 	//console.log(errors)
 	console.assert(errors.length==0,"unclosed html tag not need report!!")
   },
+  "invalid xml node":function(){
+		var errors = [];
+		var p = new DOMParser({
+			errorHandler: function(key,msg){
+				//console.log(key,msg)
+				errors.push(key, msg)
+			}
+		});
+		console.log('loop');
+		var dom = new DOMParser().parseFromString('<test><!--', 'text/xml')
+		//var dom = new DOMParser().parseFromString('<div><p><a></a><b></b></p></div>', 'text/html');
+		console.log(dom+'')
+		var dom = p.parseFromString('<r', 'text/xml');
+  },
   'invalid xml attribute(miss qute)': function() {
   	var errors = [];
 	var p = new DOMParser({

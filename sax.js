@@ -135,7 +135,12 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 						}
 						copyLocator(backup,locator);
 					}
-					el.closed = el.closed||fixSelfClosed(source,end,el.tagName,closeMap);
+					if(!el.closed && fixSelfClosed(source,end,el.tagName,closeMap)){
+						el.closed = true;
+						if(!entityMap.nbsp){
+							errorHandler.warning('unclosed xml attribute');
+						}
+					}
 					appendElement(el,domBuilder,parseStack);
 					
 					

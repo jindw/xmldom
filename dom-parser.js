@@ -21,7 +21,11 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 		entityMap.copy = '\xa9';
 		defaultNSMap['']= 'http://www.w3.org/1999/xhtml';
 	}
-	sax.parse(source,defaultNSMap,entityMap);
+	if(source){
+		sax.parse(source,defaultNSMap,entityMap);
+	}else{
+		sax.errorHandler.error("invalid document source");
+	}
 	return domBuilder.document;
 }
 function buildErrorHandler(errorImpl,domBuilder,locator){

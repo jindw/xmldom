@@ -966,8 +966,8 @@ function serializeToString(node,buf){
 	case COMMENT_NODE:
 		return buf.push( "<!--",node.data,"-->");
 	case DOCUMENT_TYPE_NODE:
-		var pubid = node.publicId.replace(/"/g,'');
-		var sysid = node.systemId.replace(/"/g,'');
+      var pubid = typeof node.publicId == 'string' && node.publicId.replace(/"/g,'');
+      var sysid = typeof node.systemId == 'string' && node.systemId.replace(/"/g,'');
 		buf.push('<!DOCTYPE ',node.name);
 		if(pubid){
 			buf.push(' PUBLIC "',pubid);

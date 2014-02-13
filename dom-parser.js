@@ -26,6 +26,29 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	sax.parse(source,defaultNSMap,entityMap);
 	return domBuilder.document;
 }
+DOMParser.prototype.parseFromStringAsync = function(source,mimeType,callback){
+	var options = this.options;
+	var sax =  new XMLReader();
+	var domBuilder = options.domBuilder || new DOMHandler();//contentHandler and LexicalHandler
+	var errorHandler = options.errorHandler;
+	var locator = options.locator;
+	var defaultNSMap = {};
+	var entityMap = {'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"}
+	if(locator){
+		domBuilder.setDocumentLocator(locator)
+	}
+
+	sax.errorHandler = buildErrorHandler(errorHandler,domBuilder,locator);
+	sax.domBuilder = options.domBuilder || domBuilder;
+	if(/\/x?html?$/.test(mimeType)){
+		entityMap.nbsp = '\xa0';
+		entityMap.copy = '\xa9';
+		defaultNSMap['']= 'http://www.w3.org/1999/xhtml';
+	}
+	sax.parseAsync(source,defaultNSMap,entityMap,function(e){
+      callback(e, domBuilder.document);
+   });
+}
 function buildErrorHandler(errorImpl,domBuilder,locator){
 	if(!errorImpl){
 		if(domBuilder instanceof DOMHandler){

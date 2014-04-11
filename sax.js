@@ -101,9 +101,13 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 			var config = parseStack.pop();
 			var localNSMap = config.localNSMap;
 			
-	        if(config.tagName != tagName){
-	            errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
-	        }
+			if(typeof config.tagName === 'undefined'){
+				errorHandler.error("unexpected end of input");
+				return;
+			}
+			if(config.tagName != tagName){
+				errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+			}
 			domBuilder.endElement(config.uri,config.localName,tagName);
 			if(localNSMap){
 				for(var prefix in localNSMap){
@@ -477,6 +481,10 @@ function parseDCC(source,start,domBuilder,errorHandler){//sure start with '<!'
 		//<!DOCTYPE
 		//startDTD(java.lang.String name, java.lang.String publicId, java.lang.String systemId) 
 		var matchs = split(source,start);
+		if (typeof matchs === 'undefined') {
+			errorHandler.error("unexpected end of input");
+			return -1;
+		}
 		var len = matchs.length;
 		if(len>1 && /!doctype/i.test(matchs[0][0])){
 			var name = matchs[1][0];

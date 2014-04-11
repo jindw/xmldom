@@ -62,10 +62,36 @@ wows.describe('errorHandle').addBatch({
 	try{
     	var doc = parser.parseFromString('<html><body title="1<2"><table>&lt;;test</body></body></html>', 'text/html');
 	}catch(e){
-		console.log(e);
+    console.log(e);
 		console.assert(/\n@#\[line\:\d+,col\:\d+\]/.test(error.join(' ')),'line,col must record:'+error)
 		return;
 	}
 	console.assert(false,doc+' should be null');
+  },
+  'error input1': function() {
+  	var error = {}
+    var parser = new DOMParser({
+    	errorHandler:function(key,msg){error[key] = msg}
+	});
+	try{
+    	var doc = parser.parseFromString('<!', 'text/xml');
+		console.assert(error.error!=null ,'error.error:'+error.error);
+	}catch(e){
+		console.log(e);
+		console.assert(e===null);
+	}
+  },
+  'error input2': function() {
+  	var error = {}
+    var parser = new DOMParser({
+    	errorHandler:function(key,msg){error[key] = msg}
+	});
+	try{
+    	var doc = parser.parseFromString('</', 'text/xml');
+		console.assert(error.error!=null ,'error.error:'+error.error);
+	}catch(e){
+		console.log(e);
+		console.assert(e===null);
+	}
   }
 }).run();

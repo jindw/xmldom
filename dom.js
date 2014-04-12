@@ -515,15 +515,19 @@ function _insertBefore(parentNode,newChild,nextChild){
 	
 	
 	if(pre){
-		pre.nextSibling = newFirst;
-	}else{
-		parentNode.firstChild = newFirst;
-	}
-	if(nextChild == null){
-		parentNode.lastChild = newLast;
-	}else{
-		nextChild.previousSibling = newLast;
-	}
+    pre.nextSibling = newFirst;
+  }else{
+    if (newFirst.nodeType !== NodeType.PROCESSING_INSTRUCTION_NODE) {
+      parentNode.firstChild = newFirst;
+    }
+  }
+  if(nextChild == null){
+    if (newLast.nodeType !== NodeType.PROCESSING_INSTRUCTION_NODE) {
+      parentNode.lastChild = newLast;
+    }
+  }else{
+    nextChild.previousSibling = newLast;
+  }
 	do{
 		newFirst.parentNode = parentNode;
 	}while(newFirst !== newLast && (newFirst= newFirst.nextSibling))
@@ -1013,7 +1017,7 @@ function importNode(doc,node,deep){
 	//case DOCUMENT_TYPE_NODE:
 	//cannot be imported.
 	//case ENTITY_NODE:
-	//case NOTATION_NODE：
+	//case NOTATION_NODE���
 	//can not hit in level3
 	//default:throw e;
 	}

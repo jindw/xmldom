@@ -1017,7 +1017,7 @@ function importNode(doc,node,deep){
 	//case DOCUMENT_TYPE_NODE:
 	//cannot be imported.
 	//case ENTITY_NODE:
-	//case NOTATION_NODE���
+	//case NOTATION_NODE:
 	//can not hit in level3
 	//default:throw e;
 	}

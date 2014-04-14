@@ -488,7 +488,13 @@ function _removeChild(parentNode,child){
 	}else{
 		parentNode.lastChild = previous;
 	}
-	_onUpdateChild(parentNode.ownerDocument,parentNode);
+	
+	var document = parentNode.ownerDocument;
+	if (!document && parentNode.nodeType == NodeType.DOCUMENT_NODE) {
+	  document = parentNode;
+	}
+	
+	_onUpdateChild(document,parentNode);
 	return child;
 }
 /**

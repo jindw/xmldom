@@ -33,6 +33,6 @@ vows.describe('Issue 83').addBatch({
     assert.equal("UTF-8", doc.xmlEncoding);
     assert.equal("1.0", doc.xmlVersion);
     assert.equal(false, doc.xmlStandalone);
-    assert.equal('<?xml version="1.0" encoding="UTF-8" standalone="no"?><a/>', new XMLSerializer().serializeToString(doc));
+    assert.equal('<?xml encoding="UTF-8" standalone="no" version="1.0"?><a/>', new XMLSerializer().serializeToString(doc));
   }
 }).run();

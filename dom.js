@@ -941,6 +941,23 @@ function serializeToString(node,buf){
 		}
 		return;
 	case DOCUMENT_NODE:
+	  if (node.xmlEncoding||node.xmlStandalone||node.xmlVersion) {
+	    buf.push('<?xml');
+	    
+	    if (node.xmlEncoding) {
+	      buf.push(' encoding="', node.xmlEncoding, '"');
+	    }
+      
+      if (node.xmlStandalone !== undefined) {
+        buf.push(' standalone="', node.xmlStandalone ? 'yes' : 'no', '"');
+      }
+	    
+	    if (node.xmlVersion) {
+        buf.push(' version="', node.xmlVersion, '"');
+	    }
+	    
+	    buf.push('?>');
+	  }
 	case DOCUMENT_FRAGMENT_NODE:
 		var child = node.firstChild;
 		while(child){
@@ -1013,7 +1030,7 @@ function importNode(doc,node,deep){
 	//case DOCUMENT_TYPE_NODE:
 	//cannot be imported.
 	//case ENTITY_NODE:
-	//case NOTATION_NODE：
+	//case NOTATION_NODE���
 	//can not hit in level3
 	//default:throw e;
 	}

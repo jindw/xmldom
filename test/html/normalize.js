@@ -45,10 +45,10 @@ wows.describe('html normalizer').addBatch({
     	console.assert(dom == '<Label onClick="doClick..">Hello, World</Label>',dom+'')
 	},
 	"unclosed":function(){
-    	var dom = new DOMParser().parseFromString('<html><meta><link><img><br><hr><input></html>','text/html');
-    	console.assert(dom == '<html><meta/><link/><img/><br/><hr/><input/></html>',dom+'')
-    	
-    	var dom = new DOMParser().parseFromString('<html title =1/2></html>','text/html');
+    	var dom = new DOMParser().parseFromString('<html><area><base><br><col><embed><hr><img><input><keygen><link><menuitem><meta><param><source><track><wbr></html>','text/html');
+    	console.assert(dom == '<html><area/><base/><br/><col/><embed/><hr/><img/><input/><keygen/><link/><menuitem/><meta/><param/><source/><track/><wbr/></html>',dom+'')
+
+	var dom = new DOMParser().parseFromString('<html title =1/2></html>','text/html');
     	console.assert(dom == '<html title="1/2"></html>',dom+'')
     	
     	var dom = new DOMParser().parseFromString('<html title= 1/>','text/html');
@@ -59,13 +59,6 @@ wows.describe('html normalizer').addBatch({
     	
     	var dom = new DOMParser().parseFromString('<html title/>','text/html');
     	console.assert(dom == '<html title="title"></html>',dom+'')
-    	
-    	
-    	
-    	var dom = new DOMParser().parseFromString('<html><meta><link><img><br><hr><input></html>','text/html');
-    	console.assert(dom == '<html><meta/><link/><img/><br/><hr/><input/></html>',dom+'')
-    	
-    	
 	},
     'script': function () { 
     	var dom = new DOMParser().parseFromString('<script>alert(a<b&&c?"<br>":">>");</script>','text/html');

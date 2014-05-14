@@ -132,7 +132,7 @@ DOMHandler.prototype = {
 				var charNode = this.document.createCDATASection(chars);
 				this.currentElement.appendChild(charNode);
 			} else {
-				var charNode = this.document.createTextNode(chars);
+				var charNode = this.document.createTextNode(chars.replace(/^\s+/, '')); // removing leading whitespace to be more consistent with browser DOMParser
 				this.currentElement.appendChild(charNode);
 			}
 			this.locator && position(this.locator,charNode)

@@ -922,7 +922,11 @@ function serializeToString(node,buf){
 		for(var i=0;i<len;i++){
 			serializeToString(attrs.item(i),buf,isHTML);
 		}
-		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
+
+        if(/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
+            // bachelor tags will be stripped of inner content
+			buf.push('/>');
+		}else if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
 			buf.push('>');
 			//if is cdata child node
 			if(isHTML && /^script$/i.test(nodeName)){
@@ -937,7 +941,8 @@ function serializeToString(node,buf){
 			}
 			buf.push('</',nodeName,'>');
 		}else{
-			buf.push('/>');
+ 			// defaults for empty tags: <script src=""></script>
+			buf.push('></',nodeName,'>');
 		}
 		return;
 	case DOCUMENT_NODE:

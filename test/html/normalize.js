@@ -76,6 +76,9 @@ wows.describe('html normalizer').addBatch({
     	
     	var dom = new DOMParser().parseFromString('<script>alert(a<b&&c?"<br/>":">>");</script>','text/html');
     	console.assert(dom == '<script>alert(a<b&&c?"<br/>":">>");</script>',dom+'')
+    	
+    	var dom = new DOMParser().parseFromString('<script src="./test.js"/>','text/html');
+    	console.assert(dom == '<script src="./test.js"></script>',dom+'')
 
 	},
     'textarea': function () { 

@@ -922,7 +922,7 @@ function serializeToString(node,buf){
 		for(var i=0;i<len;i++){
 			serializeToString(attrs.item(i),buf,isHTML);
 		}
-		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
+		if(child || isHTML && !/^(?:meta|link|img|br|hr|input|button)$/i.test(nodeName)){
 			buf.push('>');
 			//if is cdata child node
 			if(isHTML && /^script$/i.test(nodeName)){

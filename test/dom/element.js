@@ -55,9 +55,8 @@ wows.describe('XML Namespace Parse').addBatch({
        var childs = doc.documentElement.getElementsByTagNameNS("http://test.com",'*');
        console.assert(childs.length==6,childs.length);
        
-        var childs = doc.getElementsByTagNameNS("http://test.com",'*');
+       var childs = doc.getElementsByTagNameNS("http://test.com",'*');
        console.assert(childs.length==7,childs.length);
-       
        
        var childs = doc.documentElement.getElementsByTagNameNS("http://test.com",'test');
        console.assert(childs.length==3,childs.length);
@@ -65,7 +64,11 @@ wows.describe('XML Namespace Parse').addBatch({
        var childs = doc.getElementsByTagNameNS("http://test.com",'test');
        console.assert(childs.length==3,childs.length);
        
-       
+       var childs = doc.getElementsByTagNameNS("*, "test);
+       console.assert(childs.length==3,childs.length);
+
+       var childs = doc.documentElement.getElementsByTagNameNS("*, "test);
+       console.assert(childs.length==3,childs.length);
        
     },
     'getElementById': function () { 

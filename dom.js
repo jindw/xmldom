@@ -1107,6 +1107,46 @@ try{
 			}
 		})
 		
+		Object.defineProperty(Node.prototype,'nextElementSibling',{
+			get:function(){
+				var n = this.nextSibling;
+				while (n && (n.nodeType != n.ELEMENT_NODE)) {
+					n = n.nextSibling;
+				}
+				return n;
+			},
+		})
+		
+		Object.defineProperty(Node.prototype,'firstElementChild',{
+			get:function(){
+				var n = this.firstChild;
+				while (n && (n.nodeType != n.ELEMENT_NODE)) {
+					n = n.nextSibling;
+				}
+				return n;
+			},
+		})
+		
+		Object.defineProperty(Node.prototype,'previousElementSibling',{
+			get:function(){
+				var n = this.lastChild;
+				while (n && (n.nodeType != n.ELEMENT_NODE)) {
+					n = n.previousSibling;
+				}
+				return n;
+			},
+		})
+		
+		Object.defineProperty(Node.prototype,'lastElementChild',{
+			get:function(){
+				var n = this.lastChild;
+				while (n && (n.nodeType != n.ELEMENT_NODE)) {
+					n = n.previousSibling;
+				}
+				return n;
+			},
+		})
+
 		function getTextContent(node){
 			switch(node.nodeType){
 			case 1:

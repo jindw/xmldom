@@ -713,6 +713,7 @@ function Element() {
 };
 Element.prototype = {
 	nodeType : ELEMENT_NODE,
+	dispatchEvent: function () {}, // Todo
 	hasAttribute : function(name){
 		return this.getAttributeNode(name)!=null;
 	},

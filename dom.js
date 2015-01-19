@@ -1128,6 +1128,15 @@ try{
 			//console.log(value)
 			object['$$'+key] = value
 		}
+
+		Object.defineProperty(Attr.prototype,'nodeValue',{
+			get:function(){
+				return this.value;
+			},
+			set:function(data){
+				this.value = data;
+			}
+		});
 	}
 }catch(e){//ie8
 }

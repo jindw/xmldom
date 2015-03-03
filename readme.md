@@ -217,3 +217,34 @@ DOM extension by xmldom
 			lineNumber
 			//Numbered starting from '1'
 			columnNumber
+
+XPath2
+---
+```js
+var xmldom=require("xmldom");
+var fs=require("fs");
+var DOMParser = xmldom.DOMParser;
+var xpath=require("xpath.js")(xmldom.domClasses.Document.prototype);
+
+function nodeName(e) {return e.nodeName;}
+function nodeValue(e) {return e.nodeValue;}
+
+var xml = new DOMParser().parseFromString(fs.readFileSync("data.xml").toString());
+var xsl = new DOMParser().parseFromString(fs.readFileSync("content.xslt").toString());
+
+xmldom.domClasses.Node.prototype.select=function(e) {
+  var oStaticContext=new xpath.classes.StaticContext();
+  oStaticContext.namespaceResolver=this.documentElement||this.ownerDocument.documentElement;
+  return xpath.evaluate(e,this,oStaticContext);
+};
+
+var repl = require("repl");
+var r = repl.start("xpath2> ");
+
+r.context.nodeName=nodeName;
+r.context.nodeValue=nodeValue;
+r.context.xmldom=xmldom;
+r.context.xml=xml;
+r.context.xsl=xsl;
+r.context.xpath=xpath;
+```

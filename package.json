@@ -15,7 +15,8 @@
   "contributors": [
     {"name" : "Yaron Naveh","email" : "yaronn01@gmail.com","web" : "http://webservices20.blogspot.com/"},
     {"name" : "Harutyun Amirjanyan","email" : "amirjanyan@gmail.com","web" : "https://github.com/nightwing"},
-    {"name" : "Alan Gutierrez","email" : "alan@prettyrobots.com","web" : "http://www.prettyrobots.com/"}
+    {"name" : "Alan Gutierrez","email" : "alan@prettyrobots.com","web" : "http://www.prettyrobots.com/"},
+    {"name" : "Rui Azevedo","email" : "ruihfazevedo@gmail.com","web" : "http://www.r-site.net/"}
   ],
   "bugs": {"email": "jindw@xidea.org","url": "http://github.com/jindw/xmldom/issues"},
   "licenses": [{"type": "LGPL","url": "http://www.gnu.org/licenses/lgpl.html","MIT":"http://opensource.org/licenses/MIT"}]

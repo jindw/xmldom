@@ -809,7 +809,7 @@ CharacterData.prototype = {
 	},
 	appendData: function(text) {
 		text = this.data+text;
-		this.nodeValue = this.data = text;
+		this.data = text;
 		this.length = text.length;
 	},
 	insertData: function(offset,text) {
@@ -829,7 +829,7 @@ CharacterData.prototype = {
 		var start = this.data.substring(0,offset);
 		var end = this.data.substring(offset+count);
 		text = start + text + end;
-		this.nodeValue = this.data = text;
+		this.data = text;
 		this.length = text.length;
 	}
 }
@@ -843,7 +843,7 @@ Text.prototype = {
 		var text = this.data;
 		var newText = text.substring(offset);
 		text = text.substring(0, offset);
-		this.data = this.nodeValue = text;
+		this.data = text;
 		this.length = text.length;
 		var newNode = this.ownerDocument.createTextNode(newText);
 		if(this.parentNode){
@@ -1128,6 +1128,14 @@ try{
 			//console.log(value)
 			object['$$'+key] = value
 		}
+		Object.defineProperty(CharacterData.prototype,'nodeValue',{
+			get:function(){
+				return this.data;
+			},
+			set:function(data){
+				this.data = data;
+			}
+		});
 	}
 }catch(e){//ie8
 }

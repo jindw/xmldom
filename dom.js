@@ -712,7 +712,7 @@ Element.prototype = {
 	},
 	getAttribute : function(name){
 		var attr = this.getAttributeNode(name);
-		return attr && attr.value || '';
+		return attr && attr.value;
 	},
 	getAttributeNode : function(name){
 		return this.attributes.getNamedItem(name);

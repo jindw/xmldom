@@ -4,7 +4,6 @@ define([
     './dom'           // dom
 ],
 function (
-    Logger,
     domParser,
     sax,
     dom

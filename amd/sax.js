@@ -133,7 +133,9 @@ define([], function () {
                         //elStartEnd
                         var end = parseElementStartPart(source,i,el,entityReplacer,errorHandler);
                         var len = el.length;
+
                         //position fixed
+                        var multiLineAttrLocator = {};
                         if(len && locator){
                             var backup = copyLocator(locator,{});
                             for(var i = 0;i<len;i++){
@@ -141,6 +143,7 @@ define([], function () {
                                 position(a.offset);
                                 a.offset = copyLocator(locator,{});
                             }
+                            copyLocator(locator, multiLineAttrLocator);
                             copyLocator(backup,locator);
                         }
                         if(!el.closed && fixSelfClosed(source,end,el.tagName,closeMap)){
@@ -151,6 +154,10 @@ define([], function () {
                         }
                         appendElement(el,domBuilder,parseStack);
 
+                        //position resetting, next element lineNumber refix
+                        if (multiLineAttrLocator.lineNumber > locator.lineNumber) {
+                            copyLocator(multiLineAttrLocator, locator);
+                        }
 
                         if(el.uri === 'http://www.w3.org/1999/xhtml' && !el.closed){
                             end = parseHtmlSpecialContent(source,end,el.tagName,entityReplacer,domBuilder)

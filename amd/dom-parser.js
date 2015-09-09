@@ -114,8 +114,8 @@ function (
                 var value = attrs.getValue(i);
                 var qName = attrs.getQName(i);
                 var attr = doc.createAttributeNS(namespaceURI, qName);
-                if( attr.getOffset){
-                    position(attr.getOffset(1),attr)
+                if (attrs.getOffset) {
+                    position(attrs.getOffset(i), attr);
                 }
                 attr.value = attr.nodeValue = value;
                 el.setAttributeNode(attr)

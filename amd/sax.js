@@ -105,7 +105,8 @@ define([], function () {
                     var localNSMap = config.localNSMap;
 
                     if(config.tagName != tagName){
-                        errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+                        var msg = "end tag name: "+tagName+' is not match the current start tagName:'+config.tagName;
+                        errorHandler.fatalError(msg, config.locator);
                     }
                     domBuilder.endElement(config.uri,config.localName,tagName);
                     if(localNSMap){
@@ -152,6 +153,7 @@ define([], function () {
                                 errorHandler.warning('unclosed xml attribute');
                             }
                         }
+                        el.locator = copyLocator(locator, {});
                         appendElement(el,domBuilder,parseStack);
 
                         //position resetting, next element lineNumber refix

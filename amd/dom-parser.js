@@ -65,8 +65,15 @@ function (
                     }
                 }
             }
-            errorHandler[key] = fn && function(msg){
-                fn(msg+_locator(locator));
+            errorHandler[key] = fn && function(msg, lo){
+                var suffix;
+
+                if (lo) {
+                    suffix = _locator(lo);
+                } else {
+                    suffix = _locator(locator);
+                }
+                fn(msg+suffix);
             }||function(){};
         }
         build('warning','warn');

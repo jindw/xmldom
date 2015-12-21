@@ -1,7 +1,8 @@
 {
-  "name": "xmldom",
+  "name": "xmldom2",
   "version": "0.1.15",
   "main": "dom-parser.js",
+  "license": "MIT",
   "ignore": [
     "**/.*",
     "node_modules",

@@ -712,7 +712,7 @@ Element.prototype = {
 	},
 	getAttribute : function(name){
 		var attr = this.getAttributeNode(name);
-		return attr && attr.value || '';
+		return attr && attr.value;
 	},
 	getAttributeNode : function(name){
 		return this.attributes.getNamedItem(name);
@@ -1110,6 +1110,46 @@ try{
 			}
 		})
 		
+		Object.defineProperty(Node.prototype,'nextElementSibling',{
+			get:function(){
+				var n = this.nextSibling;
+				while (n && (n.nodeType != n.ELEMENT_NODE)) {
+					n = n.nextSibling;
+				}
+				return n;
+			},
+		})
+		
+		Object.defineProperty(Node.prototype,'firstElementChild',{
+			get:function(){
+				var n = this.firstChild;
+				while (n && (n.nodeType != n.ELEMENT_NODE)) {
+					n = n.nextSibling;
+				}
+				return n;
+			},
+		})
+		
+		Object.defineProperty(Node.prototype,'previousElementSibling',{
+			get:function(){
+				var n = this.lastChild;
+				while (n && (n.nodeType != n.ELEMENT_NODE)) {
+					n = n.previousSibling;
+				}
+				return n;
+			},
+		})
+		
+		Object.defineProperty(Node.prototype,'lastElementChild',{
+			get:function(){
+				var n = this.lastChild;
+				while (n && (n.nodeType != n.ELEMENT_NODE)) {
+					n = n.previousSibling;
+				}
+				return n;
+			},
+		})
+
 		function getTextContent(node){
 			switch(node.nodeType){
 			case 1:

@@ -252,4 +252,23 @@ if(typeof require == 'function'){
 	var DOMImplementation = exports.DOMImplementation = require('./dom').DOMImplementation;
 	exports.XMLSerializer = require('./dom').XMLSerializer ;
 	exports.DOMParser = DOMParser;
+
+    // Exposition of DOM Level 2 Elements
+    exports.DOMException = require('./dom').DOMException;
+    exports.NodeList = require('./dom').NodeList;
+    exports.LiveNodeList = require('./dom').LiveNodeList;
+    exports.NamedNodeMap = require('./dom').NamedNodeMap;
+    exports.Node = require('./dom').Node;
+    exports.Document = require('./dom').Document;
+    exports.Element = require('./dom').Element;
+    exports.Attr = require('./dom').Attr;
+    exports.CharacterData = require('./dom').CharacterData;
+    exports.Text = require('./dom').Text;
+    exports.Comment = require('./dom').Comment;
+    exports.DocumentType = require('./dom').DocumentType;
+    exports.Notation = require('./dom').Notation;
+    exports.Entity = require('./dom').Entity;
+    exports.CDATASection = require('./dom').CDATASection;
+    exports.EntityReference = require('./dom').EntityReference;
+    exports.ProcessingInstruction = require('./dom').ProcessingInstruction;
 }

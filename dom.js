@@ -903,7 +903,7 @@ ProcessingInstruction.prototype.nodeType = PROCESSING_INSTRUCTION_NODE;
 _extends(ProcessingInstruction,Node);
 function XMLSerializer(){}
 XMLSerializer.prototype.serializeToString = function(node,attributeSorter){
-	node.toString(attributeSorter);
+	return node.toString(attributeSorter);
 }
 Node.prototype.toString =function(attributeSorter){
 	var buf = [];

@@ -7,6 +7,7 @@
   "homepage": "https://github.com/jindw/xmldom",
   "repository": {"type": "git","url": "git://github.com/jindw/xmldom.git"},
   "main": "./dom-parser.js",
+  "browser": "./browser.js",
   "scripts" : { "test": "proof platform win32 && proof test */*/*.t.js || t/test" },
   "engines": {"node": ">=0.1"},
   "dependencies": {},

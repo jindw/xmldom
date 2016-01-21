@@ -253,4 +253,5 @@ if(typeof require == 'function'){
 	var DOMImplementation = exports.DOMImplementation = require('./dom').DOMImplementation;
 	exports.XMLSerializer = require('./dom').XMLSerializer ;
 	exports.DOMParser = DOMParser;
+	exports.Node = require("./dom").Node;
 }

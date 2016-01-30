@@ -70,6 +70,45 @@ var INVALID_MODIFICATION_ERR 	= ExceptionCode.INVALID_MODIFICATION_ERR 	= ((Exce
 var NAMESPACE_ERR            	= ExceptionCode.NAMESPACE_ERR           	= ((ExceptionMessage[14]="Invalid namespace"),14);
 var INVALID_ACCESS_ERR       	= ExceptionCode.INVALID_ACCESS_ERR      	= ((ExceptionMessage[15]="Invalid access"),15);
 
+//compareDocumentPosition bitmask results
+var DOCUMENT_POSITION_DISCONNECTED=1;
+var DOCUMENT_POSITION_PRECEDING=2;
+var DOCUMENT_POSITION_FOLLOWING=4;
+var DOCUMENT_POSITION_CONTAINS=8;
+var DOCUMENT_POSITION_CONTAINED_BY=16;
+var DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC=32;
+
+//helper functions for compareDocumentPosition
+//TODO: this can be members
+function parentChain(a) {
+  var r=[];
+  while(a.parentNode||a.ownerElement) r=[a=(a.parentNode||a.ownerElement)].concat(r);
+  return r;
+}
+
+function commonAncestor(a,b) {
+  if (b.length<a.length) return commonAncestor(b,a);
+  var c=null;
+  for(var n in a)
+    if (a[n]===b[n]) c=a[n]; else return c;
+  return c;
+}
+
+//comparing unrelated nodes must be consistent... 
+//so we assign a guid to the compared docs
+//for further reference
+function guid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+function docGUID(doc) {
+   if (!doc.guid) doc.guid=guid();
+   return doc.guid;
+}
+//-- end of helper functions
 
 function DOMException(code, message) {
 	if(message instanceof Error){
@@ -402,6 +441,24 @@ Node.prototype = {
     isDefaultNamespace:function(namespaceURI){
     	var prefix = this.lookupPrefix(namespaceURI);
     	return prefix == null;
+    },
+    compareDocumentPosition:function (o) {
+      if (this===o) return 0;
+      if (this.ownerDocument!==o.ownerDocument) 
+        return DOCUMENT_POSITION_DISCONNECTED|DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC
+          |(docGUID(this.ownerDocument)>docGUID(o.ownerDocument)?DOCUMENT_POSITION_FOLLOWING:DOCUMENT_POSITION_PRECEDING);
+      var aa=parentChain(this);
+      var ab=parentChain(o);
+      if (aa.indexOf(o)>=0) return DOCUMENT_POSITION_CONTAINS;
+      if (ab.indexOf(this)>=0) return DOCUMENT_POSITION_CONTAINED_BY;
+      var ca=commonAncestor(aa,ab);
+      for(var n in ca.childNodes) {
+        var child=ca.childNodes[n];
+        if (child===this) return DOCUMENT_POSITION_FOLLOWING;
+        if (child===o) return DOCUMENT_POSITION_PRECEDING;
+        if (aa.indexOf(child)>=0) return DOCUMENT_POSITION_FOLLOWING;
+        if (ab.indexOf(child)>=0) return DOCUMENT_POSITION_PRECEDING;
+      };
     }
 };
 
@@ -1144,4 +1201,20 @@ try{
 if(typeof require == 'function'){
 	exports.DOMImplementation = DOMImplementation;
 	exports.XMLSerializer = XMLSerializer;
+    exports.domClasses={
+      "Document":Document,
+      "Element":Element,
+      "Node":Node,
+      "Attr":Attr,
+      "CharacterData":CharacterData,
+      "Text":Text,
+      "Comment":Comment,
+      "CDATASection":CDATASection,
+      "DocumentType":DocumentType,
+      "Notation":Notation,
+      "Entity":Entity,
+      "EntityReference":EntityReference,
+      "DocumentFragment":DocumentFragment,
+      "ProcessingInstruction":ProcessingInstruction
+    };
 }

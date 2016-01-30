@@ -41,27 +41,20 @@ function buildErrorHandler(errorImpl,domBuilder,locator){
 	locator = locator||{}
 	function build(key){
 		var fn = errorImpl[key];
-		if(!fn){
-			if(isCallback){
-				fn = errorImpl.length == 2?function(msg){errorImpl(key,msg)}:errorImpl;
-			}else{
-				var i=arguments.length;
-				while(--i){
-					if(fn = errorImpl[arguments[i]]){
-						break;
-					}
-				}
-			}
+		if(!fn && isCallback){
+			fn = errorImpl.length == 2?function(msg){errorImpl(key,msg)}:errorImpl;
 		}
 		errorHandler[key] = fn && function(msg){
-			fn(msg+_locator(locator));
+			fn('[xmldom '+key+']\t'+msg+_locator(locator));
 		}||function(){};
 	}
-	build('warning','warn');
-	build('error','warn','warning');
-	build('fatalError','warn','warning','error');
+	build('warning');
+	build('error');
+	build('fatalError');
 	return errorHandler;
 }
+
+//console.log('#\n\n\n\n\n\n\n####')
 /**
  * +ContentHandler+ErrorHandler
  * +LexicalHandler+EntityResolver2
@@ -178,13 +171,13 @@ DOMHandler.prototype = {
 	 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
 	 */
 	warning:function(error) {
-		console.warn(error,_locator(this.locator));
+		console.warn('[xmldom warning]\t'+error,_locator(this.locator));
 	},
 	error:function(error) {
-		console.error(error,_locator(this.locator));
+		console.error('[xmldom error]\t'+error,_locator(this.locator));
 	},
 	fatalError:function(error) {
-		console.error(error,_locator(this.locator));
+		console.error('[xmldom fatalError]\t'+error,_locator(this.locator));
 	    throw error;
 	}
 }

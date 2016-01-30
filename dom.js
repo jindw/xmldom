@@ -109,6 +109,12 @@ NodeList.prototype = {
 	 */
 	item: function(index) {
 		return this[index] || null;
+	},
+	toString:function(){
+		for(var buf = [], i = 0;i<this.length;i++){
+			serializeToString(this[i],buf);
+		}
+		return buf.join('');
 	}
 };
 function LiveNodeList(node,refresh){

@@ -1144,4 +1144,21 @@ try{
 if(typeof require == 'function'){
 	exports.DOMImplementation = DOMImplementation;
 	exports.XMLSerializer = XMLSerializer;
+    exports.DOMException = DOMException;
+    exports.NodeList = NodeList;
+    exports.LiveNodeList = LiveNodeList;
+    exports.NamedNodeMap = NamedNodeMap;
+    exports.Node = Node;
+    exports.Document = Document;
+    exports.Element = Element;
+    exports.Attr = Attr;
+    exports.CharacterData = CharacterData;
+    exports.Text = Text;
+    exports.Comment = Comment;
+    exports.DocumentType = DocumentType;
+    exports.Notation = Notation;
+    exports.Entity = Entity;
+    exports.CDATASection = CDATASection;
+    exports.EntityReference = EntityReference;
+    exports.ProcessingInstruction = ProcessingInstruction;
 }

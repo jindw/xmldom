@@ -65,7 +65,20 @@ DOM level2 method and attribute:
 ------
 
  * [Node](http://www.w3.org/TR/2000/REC-DOM-Level-2-Core-20001113/core.html#ID-1950641247)
-	
+		 
+		const:
+			ELEMENT_NODE
+			ATTRIBUTE_NODE
+			TEXT_NODE
+			CDATA_SECTION_NODE
+			ENTITY_REFERENCE_NODE
+			ENTITY_NODE
+			PROCESSING_INSTRUCTION_NODE
+			COMMENT_NODE
+			DOCUMENT_NODE
+			DOCUMENT_TYPE_NODE
+			DOCUMENT_FRAGMENT_NODE
+			NOTATION_NODE
 		attribute:
 			nodeValue|prefix
 		readonly attribute:

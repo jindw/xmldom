@@ -916,7 +916,28 @@ Node.prototype.toString =function(attributeSorter){
 	serializeToString(this,buf,attributeSorter);
 	return buf.join('');
 }
-function serializeToString(node,buf,attributeSorter,isHTML){
+function IsNamespaceRendered(prefix, uri, visibleNamespaces) {
+	// // if the default namespace xmlns="" is not re-defined yet
+	// // then we do not want to print it out
+	if (!prefix && !uri)
+		return true;
+	uri = uri || "";
+	if (prefix === "xml" && uri === "http://www.w3.org/XML/1998/namespace")
+		return true;
+	for (var i = visibleNamespaces.length - 1; i >= 0; i--) {
+		var ns = visibleNamespaces[i];
+		// get namespace prefix
+		if (ns.prefix == prefix)
+			return ns.namespace == uri;
+	}
+
+	return false;
+}
+function VisibleNamespacesFilter(start, item, index) {
+	return index < start;
+}
+function serializeToString(node,buf,attributeSorter,isHTML,visibleNamespaces){
+	if (visibleNamespaces == void 0) visibleNamespaces = {items:[]};
 	switch(node.nodeType){
 	case ELEMENT_NODE:
 		var attrs = node.attributes;
@@ -925,6 +946,23 @@ function serializeToString(node,buf,attributeSorter,isHTML){
 		var nodeName = node.tagName;
 		isHTML =  (htmlns === node.namespaceURI) ||isHTML 
 		buf.push('<',nodeName);
+		
+		// add namespace for current node		
+		var startVisibleNamespaces = visibleNamespaces.items.length;
+		if (!IsNamespaceRendered(node.prefix, node.namespaceURI, visibleNamespaces.items)) {
+			buf.push(" xmlns" + ((node.prefix) ? ":" + node.prefix : "") + "=\"" + node.namespaceURI + "\"");
+			visibleNamespaces.items.push({ prefix: node.prefix, namespace: node.namespaceURI });
+		}
+		
+		// add namespaces for attributes
+		for (var i = 0; i < len; i++) {
+			var attr = node.attributes[i];
+			if (!IsNamespaceRendered(attr.prefix, attr.namespaceURI, visibleNamespaces.items)) {
+				buf.push(" xmlns" + ((attr.prefix) ? ":" + attr.prefix : "") + "=\"" + attr.namespaceURI + "\"");
+				visibleNamespaces.items.push({ prefix: attr.prefix, namespace: attr.namespaceURI });
+			}
+		}
+		
 		if(attributeSorter){
 			buf.sort.apply(attrs, attributeSorter);
 		}
@@ -948,6 +986,10 @@ function serializeToString(node,buf,attributeSorter,isHTML){
 		}else{
 			buf.push('/>');
 		}
+
+		// remove added visible namespaces
+		visibleNamespaces.items = visibleNamespaces.items.filter(
+			VisibleNamespacesFilter.bind(this, startVisibleNamespaces));
 		return;
 	case DOCUMENT_NODE:
 	case DOCUMENT_FRAGMENT_NODE:

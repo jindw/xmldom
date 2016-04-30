@@ -18,5 +18,5 @@
     {"name" : "Alan Gutierrez","email" : "alan@prettyrobots.com","web" : "http://www.prettyrobots.com/"}
   ],
   "bugs": {"email": "jindw@xidea.org","url": "http://github.com/jindw/xmldom/issues"},
-  "licenses": [{"type": "LGPL","url": "http://www.gnu.org/licenses/lgpl.html","MIT":"http://opensource.org/licenses/MIT"}]
+  "license": "(MIT OR LGPL-3.0)"
 }

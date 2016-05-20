@@ -27,7 +27,38 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	}else{
 		sax.errorHandler.error("invalid document source");
 	}
-	return domBuilder.document;
+	
+	var document = domBuilder.document;
+	if (document && document.firstChild) {
+	  if (document.firstChild.nodeType === 7 && document.firstChild.tagName === 'xml') {
+	    if (document.firstChild.data) {
+	      var attrs = document.firstChild.data.replace(/ +/g, ' ').split(' ');
+	      for (var i = 0, l = attrs.length; i < l; i++) {
+	        var attr = attrs[i].split('=');
+	        if (attr.length === 2) {
+	          var attrName = attr[0].toLowerCase();
+	          var attrValue = attr[1].length > 1 ? attr[1].substring(1, attr[1].length - 1) : null;
+	          
+	          switch (attrName) {
+	            case 'encoding':
+	              document.xmlEncoding = attrValue;
+	            break;
+	            case 'standalone':
+                document.xmlStandalone = attrValue ? "yes" === attrValue.toLowerCase() : false;
+	            break;
+	            case 'version':
+	              document.xmlVersion = attrValue;
+	            break;
+	          }
+	        }
+	      }
+	    }
+	    
+	    document.removeChild(document.firstChild);
+	  }
+	}
+	
+	return document;
 }
 function buildErrorHandler(errorImpl,domBuilder,locator){
 	if(!errorImpl){

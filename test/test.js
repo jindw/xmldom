@@ -27,5 +27,5 @@ console.assert(str1 == str3,str3,str1);
 var xmlString = '<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">\n<ds:SignatureValue/>\n</ds:Signature>';
 var xml = new DOMParser().parseFromString(xmlString, "application/xml");
 var selectedXml = xml.documentElement;//select(xml, "//*[local-name() = 'SignatureValue']")[0];
-xmlString = new XMLSerializer().serializeToString(selectedXml.firstChild.nextSibling);
+xmlString = new XMLSerializer().serializeToString(selectedXml);//.firstChild.nextSibling);
 console.log(xmlString);

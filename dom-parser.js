@@ -3,7 +3,6 @@ function DOMParser(options){
 	
 }
 DOMParser.prototype.parseFromString = function(source,mimeType){
-	var source = source.replace(/\r/g, ""); // remove 0D char from string. NodeJS fs reads \n like \r\n
 	var options = this.options;
 	var sax =  new XMLReader();
 	var domBuilder = options.domBuilder || new DOMHandler();//contentHandler and LexicalHandler
@@ -242,9 +241,9 @@ function appendElement (hander,node) {
     }
 }//appendChild and setAttributeNS are preformance key
 
-if(typeof require == 'function'){
+//if(typeof require == 'function'){
 	var XMLReader = require('./sax').XMLReader;
 	var DOMImplementation = exports.DOMImplementation = require('./dom').DOMImplementation;
 	exports.XMLSerializer = require('./dom').XMLSerializer ;
 	exports.DOMParser = DOMParser;
-}
+//}

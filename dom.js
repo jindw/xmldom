@@ -916,59 +916,69 @@ Node.prototype.toString =function(attributeSorter){
 	serializeToString(this,buf,attributeSorter);
 	return buf.join('');
 }
-function IsNamespaceRendered(prefix, uri, visibleNamespaces) {
-	// // if the default namespace xmlns="" is not re-defined yet
-	// // then we do not want to print it out
-	if (!prefix && !uri)
-		return true;
-	uri = uri || "";
-	if (prefix === "xml" && uri === "http://www.w3.org/XML/1998/namespace")
-		return true;
-	for (var i = visibleNamespaces.length - 1; i >= 0; i--) {
+function needNamespaceDefine(node, visibleNamespaces) {
+	var prefix = node.prefix,uri = node.namespaceURI;
+	if (!prefix && !uri){
+		return false;
+	}
+	if (prefix === "xml" && uri === "http://www.w3.org/XML/1998/namespace" 
+		|| uri == 'http://www.w3.org/2000/xmlns/'){
+		return false;
+	}
+	var i = visibleNamespaces.length 
+	//console.log(visibleNamespaces)
+	while (i--) {
 		var ns = visibleNamespaces[i];
 		// get namespace prefix
-		if (ns.prefix == prefix)
-			return ns.namespace == uri;
+		//console.log(node.nodeType,node.tagName,ns.prefix,prefix)
+		if (ns.prefix == prefix){
+			
+			return ns.namespace != uri;
+		}
 	}
-
-	return false;
-}
-function VisibleNamespacesFilter(start, item, index) {
-	return index < start;
+	return true;
 }
 function serializeToString(node,buf,attributeSorter,isHTML,visibleNamespaces){
-	if (visibleNamespaces == void 0) visibleNamespaces = {items:[]};
 	switch(node.nodeType){
 	case ELEMENT_NODE:
+		if (!visibleNamespaces) visibleNamespaces = [];
+		var startVisibleNamespaces = visibleNamespaces.length;
 		var attrs = node.attributes;
 		var len = attrs.length;
 		var child = node.firstChild;
 		var nodeName = node.tagName;
+		
 		isHTML =  (htmlns === node.namespaceURI) ||isHTML 
 		buf.push('<',nodeName);
 		
-		// add namespace for current node		
-		var startVisibleNamespaces = visibleNamespaces.items.length;
-		if (!IsNamespaceRendered(node.prefix, node.namespaceURI, visibleNamespaces.items)) {
-			buf.push(" xmlns" + ((node.prefix) ? ":" + node.prefix : "") + "=\"" + node.namespaceURI + "\"");
-			visibleNamespaces.items.push({ prefix: node.prefix, namespace: node.namespaceURI });
-		}
-		
-		// add namespaces for attributes
-		for (var i = 0; i < len; i++) {
-			var attr = node.attributes[i];
-			if (!IsNamespaceRendered(attr.prefix, attr.namespaceURI, visibleNamespaces.items)) {
-				buf.push(" xmlns" + ((attr.prefix) ? ":" + attr.prefix : "") + "=\"" + attr.namespaceURI + "\"");
-				visibleNamespaces.items.push({ prefix: attr.prefix, namespace: attr.namespaceURI });
-			}
-		}
 		
 		if(attributeSorter){
 			buf.sort.apply(attrs, attributeSorter);
 		}
+		
 		for(var i=0;i<len;i++){
-			serializeToString(attrs.item(i),buf,attributeSorter,isHTML);
+			// add namespaces for attributes
+			var attr = attrs.item(i);
+			if (attr.prefix == 'xmlns') {
+				visibleNamespaces.push({ prefix: attr.localName, namespace: attr.value });
+			}else if(attr.nodeName == 'xmlns'){
+				visibleNamespaces.push({ prefix: '', namespace: attr.value });
+			}
 		}
+		for(var i=0;i<len;i++){
+			var attr = attrs.item(i);
+			if (needNamespaceDefine(attr, visibleNamespaces)) {
+				buf.push(attr.prefix ? ' xmlns:' + attr.prefix : " xmlns", "='" , attr.namespaceURI , "'");
+				visibleNamespaces.push({ prefix: attr.prefix, namespace: attr.namespaceURI });
+			}
+			serializeToString(attr,buf,attributeSorter,isHTML);
+		}
+		// add namespace for current node		
+		if (needNamespaceDefine(node, visibleNamespaces)) {
+			buf.push(node.prefix ? ' xmlns:' + node.prefix : " xmlns", "='" , node.namespaceURI , "'");
+			visibleNamespaces.push({ prefix: node.prefix, namespace: node.namespaceURI });
+		}
+		
 		if(child || isHTML && !/^(?:meta|link|img|br|hr|input|button)$/i.test(nodeName)){
 			buf.push('>');
 			//if is cdata child node
@@ -978,7 +988,7 @@ function serializeToString(node,buf,attributeSorter,isHTML,visibleNamespaces){
 				}
 			}else{
 				while(child){
-					serializeToString(child,buf,attributeSorter,isHTML);
+					serializeToString(child,buf,attributeSorter,isHTML,visibleNamespaces);
 					child = child.nextSibling;
 				}
 			}
@@ -986,10 +996,8 @@ function serializeToString(node,buf,attributeSorter,isHTML,visibleNamespaces){
 		}else{
 			buf.push('/>');
 		}
-
 		// remove added visible namespaces
-		visibleNamespaces.items = visibleNamespaces.items.filter(
-			VisibleNamespacesFilter.bind(this, startVisibleNamespaces));
+		//visibleNamespaces.length = startVisibleNamespaces;
 		return;
 	case DOCUMENT_NODE:
 	case DOCUMENT_FRAGMENT_NODE:
@@ -1152,7 +1160,7 @@ try{
 				default:
 					//TODO:
 					this.data = data;
-					this.value = value;
+					this.value = data;
 					this.nodeValue = data;
 				}
 			}
@@ -1183,7 +1191,7 @@ try{
 }catch(e){//ie8
 }
 
-if(typeof require == 'function'){
+//if(typeof require == 'function'){
 	exports.DOMImplementation = DOMImplementation;
 	exports.XMLSerializer = XMLSerializer;
-}
+//}

@@ -2,7 +2,8 @@ function DOMParser(options){
 	this.options = options ||{locator:{}};
 	
 }
-DOMParser.prototype.parseFromString = function(source,mimeType){	
+DOMParser.prototype.parseFromString = function(source,mimeType){
+	var source = source.replace(/\r/g, ""); // remove 0D char from string. NodeJS fs reads \n like \r\n
 	var options = this.options;
 	var sax =  new XMLReader();
 	var domBuilder = options.domBuilder || new DOMHandler();//contentHandler and LexicalHandler

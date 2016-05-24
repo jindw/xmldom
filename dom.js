@@ -908,12 +908,12 @@ function ProcessingInstruction() {
 ProcessingInstruction.prototype.nodeType = PROCESSING_INSTRUCTION_NODE;
 _extends(ProcessingInstruction,Node);
 function XMLSerializer(){}
-XMLSerializer.prototype.serializeToString = function(node,attributeSorter){
-	return node.toString(attributeSorter);
+XMLSerializer.prototype.serializeToString = function(node,attributeSorter,isHTML){
+	return node.toString(attributeSorter, isHTML);
 }
-Node.prototype.toString =function(attributeSorter){
+Node.prototype.toString =function(attributeSorter, isHTML){
 	var buf = [];
-	serializeToString(this,buf,attributeSorter);
+	serializeToString(this,buf,attributeSorter, isHTML);
 	return buf.join('');
 }
 function needNamespaceDefine(node, visibleNamespaces) {
@@ -993,6 +993,10 @@ function serializeToString(node,buf,attributeSorter,isHTML,visibleNamespaces){
 				}
 			}
 			buf.push('</',nodeName,'>');
+		}else if(isHTML && /^(?:meta|link|img|br|hr|input|button)$/i.test(nodeName)){
+			buf.push('>');
+		}else if(isHTML){
+			buf.push('></',nodeName,'>');
 		}else{
 			buf.push('/>');
 		}

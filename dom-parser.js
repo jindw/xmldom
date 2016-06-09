@@ -9,11 +9,10 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	var errorHandler = options.errorHandler;
 	var locator = options.locator;
 	var defaultNSMap = options.xmlns||{};
-	var entityMap = {'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"}
+	var entityMap = require('./entity-map').EntityMap;
 	if(locator){
 		domBuilder.setDocumentLocator(locator)
 	}
-	
 	sax.errorHandler = buildErrorHandler(errorHandler,domBuilder,locator);
 	sax.domBuilder = options.domBuilder || domBuilder;
 	if(/\/x?html?$/.test(mimeType)){

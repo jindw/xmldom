@@ -246,7 +246,7 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 			break;
 		case ''://end document
 			//throw new Error('unexpected end of input')
-			errorHandler.error('unexpected end of input');
+			errorHandler.fatalError('unexpected end of input');
 		case '>':
 			switch(s){
 			case S_TAG:

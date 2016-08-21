@@ -5,15 +5,19 @@ var DOMParser = require('xmldom').DOMParser;
 var DomJS = require("dom-js").DomJS;
 try{
 	var Libxml = require('libxmljs');
+	console.log('libxml loaded!!')
 }catch(e){
+	console.error(e)
 }
 
 function xmldom(data){
 	console.time('xmldom');
 	var doc = new DOMParser({locator:null,checkLater:true}).parseFromString(data);
 	console.timeEnd('xmldom');
-	doc.toString = function(){
+	if(doc.toString.name !='xxxxx'){
+	doc.toString = function xxxxx(){
 		return new XMLSerializer().serializeToString(doc);
+	}
 	}
 	return doc;
 }
@@ -23,9 +27,12 @@ function libxml(data){
 		var doc = Libxml.parseXmlString(data);
 		console.timeEnd('libxml');
 		var ToString=doc.toString ;
-		doc.toString = function(){
+		if(ToString.name !='xxxxx'){
+		doc.toString = function xxxxx(){
 			return ToString.apply(this,arguments).replace(/^\s+|\s+$/g,'');
 		}
+		}
+		//console.error(doc.toString())
 		return doc;
 	}else{
 		console.warn('libxml is not installed')

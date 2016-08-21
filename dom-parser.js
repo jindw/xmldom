@@ -25,9 +25,9 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	if(source){
 		sax.parse(source,defaultNSMap,entityMap);
 	}else{
-		sax.errorHandler.error("invalid document source");
+		sax.errorHandler.error("invalid doc source");
 	}
-	return domBuilder.document;
+	return domBuilder.doc;
 }
 function buildErrorHandler(errorImpl,domBuilder,locator){
 	if(!errorImpl){
@@ -77,13 +77,13 @@ function position(locator,node){
  */ 
 DOMHandler.prototype = {
 	startDocument : function() {
-    	this.document = new DOMImplementation().createDocument(null, null, null);
+    	this.doc = new DOMImplementation().createDocument(null, null, null);
     	if (this.locator) {
-        	this.document.documentURI = this.locator.systemId;
+        	this.doc.documentURI = this.locator.systemId;
     	}
 	},
 	startElement:function(namespaceURI, localName, qName, attrs) {
-		var doc = this.document;
+		var doc = this.doc;
 	    var el = doc.createElementNS(namespaceURI, qName||localName);
 	    var len = attrs.length;
 	    appendElement(this, el);
@@ -104,15 +104,15 @@ DOMHandler.prototype = {
 	},
 	endElement:function(namespaceURI, localName, qName) {
 		var current = this.currentElement
-	    var tagName = current.tagName;
-	    this.currentElement = current.parentNode;
+		var tagName = current.tagName;
+		this.currentElement = current.parentNode;
 	},
 	startPrefixMapping:function(prefix, uri) {
 	},
 	endPrefixMapping:function(prefix) {
 	},
 	processingInstruction:function(target, data) {
-	    var ins = this.document.createProcessingInstruction(target, data);
+	    var ins = this.doc.createProcessingInstruction(target, data);
 	    this.locator && position(this.locator,ins)
 	    appendElement(this, ins);
 	},
@@ -121,13 +121,17 @@ DOMHandler.prototype = {
 	characters:function(chars, start, length) {
 		chars = _toString.apply(this,arguments)
 		//console.log(chars)
-		if(this.currentElement && chars){
+		if(chars){
 			if (this.cdata) {
-				var charNode = this.document.createCDATASection(chars);
-				this.currentElement.appendChild(charNode);
+				var charNode = this.doc.createCDATASection(chars);
 			} else {
-				var charNode = this.document.createTextNode(chars);
+				var charNode = this.doc.createTextNode(chars);
+			}
+			if(this.currentElement){
 				this.currentElement.appendChild(charNode);
+			}else if(/^\s*$/.test(chars)){
+				this.doc.appendChild(charNode);
+				//process xml
 			}
 			this.locator && position(this.locator,charNode)
 		}
@@ -135,7 +139,7 @@ DOMHandler.prototype = {
 	skippedEntity:function(name) {
 	},
 	endDocument:function() {
-		this.document.normalize();
+		this.doc.normalize();
 	},
 	setDocumentLocator:function (locator) {
 	    if(this.locator = locator){// && !('lineNumber' in locator)){
@@ -145,7 +149,7 @@ DOMHandler.prototype = {
 	//LexicalHandler
 	comment:function(chars, start, length) {
 		chars = _toString.apply(this,arguments)
-	    var comm = this.document.createComment(chars);
+	    var comm = this.doc.createComment(chars);
 	    this.locator && position(this.locator,comm)
 	    appendElement(this, comm);
 	},
@@ -159,7 +163,7 @@ DOMHandler.prototype = {
 	},
 	
 	startDTD:function(name, publicId, systemId) {
-		var impl = this.document.implementation;
+		var impl = this.doc.implementation;
 	    if (impl && impl.createDocumentType) {
 	        var dt = impl.createDocumentType(name, publicId, systemId);
 	        this.locator && position(this.locator,dt)
@@ -235,7 +239,7 @@ function _toString(chars,start,length){
 /* Private static helpers treated below as private instance methods, so don't need to add these to the public API; we might use a Relator to also get rid of non-standard public properties */
 function appendElement (hander,node) {
     if (!hander.currentElement) {
-        hander.document.appendChild(node);
+        hander.doc.appendChild(node);
     } else {
         hander.currentElement.appendChild(node);
     }

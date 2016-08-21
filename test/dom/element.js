@@ -53,6 +53,7 @@ wows.describe('XML Namespace Parse').addBatch({
        		'<child attr="3"/></xml>','text/xml');
        		
        var childs = doc.documentElement.getElementsByTagNameNS("http://test.com",'*');
+       var i=0
        console.assert(childs.length==6,childs.length);
        
        var childs = doc.getElementsByTagNameNS("http://test.com",'*');
@@ -63,12 +64,14 @@ wows.describe('XML Namespace Parse').addBatch({
        
        var childs = doc.getElementsByTagNameNS("http://test.com",'test');
        console.assert(childs.length==3,childs.length);
-       
-       var childs = doc.getElementsByTagNameNS("*, "test);
-       console.assert(childs.length==3,childs.length);
 
-       var childs = doc.documentElement.getElementsByTagNameNS("*, "test);
-       console.assert(childs.length==3,childs.length);
+       var childs = doc.getElementsByTagNameNS("*", "test");
+       console.log([].join.apply(childs,['\n@']))
+       //console.assert(childs.length==4,childs.length);
+
+       var childs = doc.documentElement.getElementsByTagNameNS("*", "test");
+       console.log(childs.length)
+       console.assert(childs.length==4,childs.length);
        
     },
     'getElementById': function () { 

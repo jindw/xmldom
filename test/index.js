@@ -42,9 +42,7 @@ DOMParser.prototype.parseFromString = function(data,mimeType){
 			}catch(e){console.dir(e)}
 		}
 	}
-	if(this.options.checkLater){
-	setTimeout(ck,1);
-	}else{ck()}
+	//if(this.options.checkLater){setTimeout(ck,1);}else{ck()}
 	return doc;
 }
 function include(){
@@ -54,10 +52,17 @@ function include(){
 		require(file);
 	}
 }
-include('./dom','./parse-element','./node','./namespace','./html/normalize'
-		,'./error','./locator'
+include('./dom'
+		,'./parse-element'
+		,'./node','./namespace','./html/normalize'
+		,'./error'
+		
+		,'./locator'
 		,'./big-file-performance'
 		,"./xml-error"
+		,"./file-test.js"
+		,"./test-doc-witespace.js"
+		//*/
 		)
 
 

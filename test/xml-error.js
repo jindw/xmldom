@@ -66,12 +66,12 @@ vows.describe('errorHandle').addBatch({
   	var errors = [];
 	var p = new DOMParser({
 		errorHandler: function(key,msg){
-		console.log(key,msg)
-		errors.push(key, msg)
-	}
+			console.log(key,msg)
+			errors.push(key, msg)
+		}
 	});
 	var dom = p.parseFromString('<img attr="<>&"/>', 'text/html');
-	//console.log(dom+'')
+	console.log(dom+'##'+errors.length)
 	console.assert(errors.length,"invalid xml attribute(<)")
   }
 }).run();

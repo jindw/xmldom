@@ -110,9 +110,9 @@ NodeList.prototype = {
 	item: function(index) {
 		return this[index] || null;
 	},
-	toString:function(){
+	toString:function(isHTML,nodeFilter){
 		for(var buf = [], i = 0;i<this.length;i++){
-			serializeToString(this[i],buf);
+			serializeToString(this[i],buf,isHTML,nodeFilter);
 		}
 		return buf.join('');
 	}
@@ -170,6 +170,7 @@ function _addNamedNode(el,list,newAttr,oldAttr){
 	}
 }
 function _removeNamedNode(el,list,attr){
+	//console.log('remove attr:'+attr)
 	var i = _findNodeIndex(list,attr);
 	if(i>=0){
 		var lastIndex = list.length-1
@@ -185,7 +186,7 @@ function _removeNamedNode(el,list,attr){
 			}
 		}
 	}else{
-		throw DOMException(NOT_FOUND_ERR,new Error())
+		throw DOMException(NOT_FOUND_ERR,new Error(el.tagName+'@'+attr))
 	}
 }
 NamedNodeMap.prototype = {
@@ -195,9 +196,11 @@ NamedNodeMap.prototype = {
 //		if(key.indexOf(':')>0 || key == 'xmlns'){
 //			return null;
 //		}
+		//console.log()
 		var i = this.length;
 		while(i--){
 			var attr = this[i];
+			//console.log(attr.nodeName,key)
 			if(attr.nodeName == key){
 				return attr;
 			}
@@ -748,6 +751,7 @@ Element.prototype = {
 		return this.attributes.setNamedItemNS(newAttr);
 	},
 	removeAttributeNode : function(oldAttr){
+		//console.log(this == oldAttr.ownerElement)
 		return this.attributes.removeNamedItem(oldAttr.nodeName);
 	},
 	//get real attribute name,and remove it by removeAttributeNode
@@ -792,6 +796,7 @@ Element.prototype = {
 				}
 			});
 			return ls;
+			
 		});
 	}
 };
@@ -908,15 +913,32 @@ function ProcessingInstruction() {
 ProcessingInstruction.prototype.nodeType = PROCESSING_INSTRUCTION_NODE;
 _extends(ProcessingInstruction,Node);
 function XMLSerializer(){}
-XMLSerializer.prototype.serializeToString = function(node,attributeSorter){
-	return node.toString(attributeSorter);
+XMLSerializer.prototype.serializeToString = function(node,isHtml,nodeFilter){
+	return nodeSerializeToString.call(node,isHtml,nodeFilter);
 }
-Node.prototype.toString =function(attributeSorter){
+Node.prototype.toString = nodeSerializeToString;
+function nodeSerializeToString(isHtml,nodeFilter){
 	var buf = [];
-	serializeToString(this,buf,attributeSorter);
+	var refNode = this.nodeType == 9?this.documentElement:this;
+	var prefix = refNode.prefix;
+	var uri = refNode.namespaceURI;
+	
+	if(uri && prefix == null){
+		//console.log(prefix)
+		var prefix = refNode.lookupPrefix(uri);
+		if(prefix == null){
+			//isHTML = true;
+			var visibleNamespaces=[
+			{namespace:uri,prefix:null}
+			//{namespace:uri,prefix:''}
+			]
+		}
+	}
+	serializeToString(this,buf,isHtml,nodeFilter,visibleNamespaces);
+	//console.log('###',this.nodeType,uri,prefix,buf.join(''))
 	return buf.join('');
 }
-function needNamespaceDefine(node, visibleNamespaces) {
+function needNamespaceDefine(node,isHTML, visibleNamespaces) {
 	var prefix = node.prefix,uri = node.namespaceURI;
 	if (!prefix && !uri){
 		return false;
@@ -925,20 +947,38 @@ function needNamespaceDefine(node, visibleNamespaces) {
 		|| uri == 'http://www.w3.org/2000/xmlns/'){
 		return false;
 	}
+	
 	var i = visibleNamespaces.length 
-	//console.log(visibleNamespaces)
+	//console.log('@@@@',node.tagName,prefix,uri,visibleNamespaces)
 	while (i--) {
 		var ns = visibleNamespaces[i];
 		// get namespace prefix
 		//console.log(node.nodeType,node.tagName,ns.prefix,prefix)
 		if (ns.prefix == prefix){
-			
 			return ns.namespace != uri;
 		}
 	}
+	//console.log(isHTML,uri,prefix=='')
+	//if(isHTML && prefix ==null && uri == 'http://www.w3.org/1999/xhtml'){
+	//	return false;
+	//}
+	//node.flag = '11111'
+	//console.error(3,true,node.flag,node.prefix,node.namespaceURI)
 	return true;
 }
-function serializeToString(node,buf,attributeSorter,isHTML,visibleNamespaces){
+function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
+	if(nodeFilter){
+		node = nodeFilter(node);
+		if(node){
+			if(typeof node == 'string'){
+				buf.push(node);
+				return;
+			}
+		}else{
+			return;
+		}
+		//buf.sort.apply(attrs, attributeSorter);
+	}
 	switch(node.nodeType){
 	case ELEMENT_NODE:
 		if (!visibleNamespaces) visibleNamespaces = [];
@@ -952,9 +992,6 @@ function serializeToString(node,buf,attributeSorter,isHTML,visibleNamespaces){
 		buf.push('<',nodeName);
 		
 		
-		if(attributeSorter){
-			buf.sort.apply(attrs, attributeSorter);
-		}
 		
 		for(var i=0;i<len;i++){
 			// add namespaces for attributes
@@ -967,28 +1004,29 @@ function serializeToString(node,buf,attributeSorter,isHTML,visibleNamespaces){
 		}
 		for(var i=0;i<len;i++){
 			var attr = attrs.item(i);
-			if (needNamespaceDefine(attr, visibleNamespaces)) {
+			if (needNamespaceDefine(attr,isHTML, visibleNamespaces)) {
 				buf.push(attr.prefix ? ' xmlns:' + attr.prefix : " xmlns", "='" , attr.namespaceURI , "'");
 				visibleNamespaces.push({ prefix: attr.prefix, namespace: attr.namespaceURI });
 			}
-			serializeToString(attr,buf,attributeSorter,isHTML);
+			serializeToString(attr,buf,isHTML,nodeFilter,visibleNamespaces);
 		}
 		// add namespace for current node		
-		if (needNamespaceDefine(node, visibleNamespaces)) {
+		if (needNamespaceDefine(node,isHTML, visibleNamespaces)) {
 			buf.push(node.prefix ? ' xmlns:' + node.prefix : " xmlns", "='" , node.namespaceURI , "'");
 			visibleNamespaces.push({ prefix: node.prefix, namespace: node.namespaceURI });
 		}
 		
-		if(child || isHTML && !/^(?:meta|link|img|br|hr|input|button)$/i.test(nodeName)){
+		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
 			buf.push('>');
 			//if is cdata child node
-			if(isHTML && /^script$/i.test(nodeName)){
+			/*if(isHTML && /^script$/i.test(nodeName)){
 				if(child){
 					buf.push(child.data);
 				}
-			}else{
+			}else*/
+			{
 				while(child){
-					serializeToString(child,buf,attributeSorter,isHTML,visibleNamespaces);
+					serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);
 					child = child.nextSibling;
 				}
 			}
@@ -1003,7 +1041,7 @@ function serializeToString(node,buf,attributeSorter,isHTML,visibleNamespaces){
 	case DOCUMENT_FRAGMENT_NODE:
 		var child = node.firstChild;
 		while(child){
-			serializeToString(child,buf,attributeSorter,isHTML);
+			serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);
 			child = child.nextSibling;
 		}
 		return;

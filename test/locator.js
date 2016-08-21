@@ -1,6 +1,12 @@
 var wows = require('vows');
 var DOMParser = require('xmldom').DOMParser;
 
+
+    var parser = new DOMParser({
+    	locator:{}
+	});
+    var doc = parser.parseFromString('<root>\n\t<err</root>', 'text/html');
+
 function assertPosition(n, line, col) {
   console.assert(n.lineNumber == line,'lineNumber:'+n.lineNumber+'/'+line);
   console.assert(n.columnNumber == col,'columnNumber:'+n.columnNumber+'/'+col);

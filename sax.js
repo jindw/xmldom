@@ -2,7 +2,7 @@
 //[4a]   	NameChar	   ::=   	NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
 //[5]   	Name	   ::=   	NameStartChar (NameChar)*
 var nameStartChar = /[A-Z_a-z\xC0-\xD6\xD8-\xF6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]///\u10000-\uEFFFF
-var nameChar = new RegExp("[\\-\\.0-9"+nameStartChar.source.slice(1,-1)+"\u00B7\u0300-\u036F\\u203F-\u2040]");
+var nameChar = new RegExp("[\\-\\.0-9"+nameStartChar.source.slice(1,-1)+"\\u00B7\\u0300-\\u036F\\u203F-\\u2040]");
 var tagNamePattern = new RegExp('^'+nameStartChar.source+nameChar.source+'*(?:\:'+nameStartChar.source+nameChar.source+'*)?$');
 //var tagNamePattern = /^[a-zA-Z_][\w\-\.]*(?:\:[a-zA-Z_][\w\-\.]*)?$/
 //var handlers = 'resolveEntity,getExternalSubset,characters,endDocument,endElement,endPrefixMapping,ignorableWhitespace,processingInstruction,setDocumentLocator,skippedEntity,startDocument,startElement,startPrefixMapping,notationDecl,unparsedEntityDecl,error,fatalError,warning,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,comment,endCDATA,endDTD,endEntity,startCDATA,startDTD,startEntity'.split(',')
@@ -87,7 +87,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 			var tagStart = source.indexOf('<',start);
 			if(tagStart<0){
 				if(!source.substr(start).match(/^\s*$/)){
-					var doc = domBuilder.document;
+					var doc = domBuilder.doc;
 	    			var text = doc.createTextNode(source.substr(start));
 	    			doc.appendChild(text);
 	    			domBuilder.currentElement = text;
@@ -101,17 +101,26 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 			case '/':
 				var end = source.indexOf('>',tagStart+3);
 				var tagName = source.substring(tagStart+2,end);
+				//console.error(parseStack.length,parseStack)
 				var config = parseStack.pop();
+				//console.error(config);
 				var localNSMap = config.localNSMap;
-		        if(config.tagName != tagName){
-		            errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
-		        }
-				domBuilder.endElement(config.uri,config.localName,tagName);
-				if(localNSMap){
-					for(var prefix in localNSMap){
-						domBuilder.endPrefixMapping(prefix) ;
+				var endMatch = config.tagName == tagName;
+				var endIgnoreCaseMach = endMatch || config.tagName&&config.tagName.toLowerCase() == tagName.toLowerCase()
+		        if(endIgnoreCaseMach){
+		        	domBuilder.endElement(config.uri,config.localName,tagName);
+					if(localNSMap){
+						for(var prefix in localNSMap){
+							domBuilder.endPrefixMapping(prefix) ;
+						}
 					}
-				}
+					if(!endMatch)
+		            errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+		        }else{
+		        	errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+		        	parseStack.push(config)
+		        }
+				
 				end++;
 				break;
 				// end elment
@@ -124,13 +133,11 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 				end = parseDCC(source,tagStart,domBuilder,errorHandler);
 				break;
 			default:
-			
 				locator&&position(tagStart);
-				
 				var el = new ElementAttributes();
-				
+				var currentNSMap = parseStack[parseStack.length-1].currentNSMap;
 				//elStartEnd
-				var end = parseElementStartPart(source,tagStart,el,entityReplacer,errorHandler);
+				var end = parseElementStartPart(source,tagStart,el,currentNSMap,entityReplacer,errorHandler);
 				var len = el.length;
 				
 				if(locator){
@@ -150,7 +157,9 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 						errorHandler.warning('unclosed xml attribute');
 					}
 				}
-				appendElement(el,domBuilder,parseStack);
+				if(appendElement(el,domBuilder,currentNSMap)){
+					parseStack.push(el)
+				}
 				
 				
 				if(el.uri === 'http://www.w3.org/1999/xhtml' && !el.closed){
@@ -160,8 +169,10 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 				}
 			}
 		}catch(e){
-			errorHandler.error('element parse error: '+e);
+			console.error(e)
+			//errorHandler.error('element parse error: '+e);
 			end = -1;
+			//throw e;
 		}
 		if(end>start){
 			start = end;
@@ -181,7 +192,7 @@ function copyLocator(f,t){
  * @see #appendElement(source,elStartEnd,el,selfClosed,entityReplacer,domBuilder,parseStack);
  * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
  */
-function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
+function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,errorHandler){
 	var attrName;
 	var value;
 	var p = ++start;
@@ -202,7 +213,12 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 			break;
 		case '\'':
 		case '"':
-			if(s === S_EQ){//equal
+			if(s === S_EQ || s === S_ATTR //|| s == S_ATTR_S
+				){//equal
+				if(s === S_ATTR){
+					errorHandler.warning('attribute value must after "="')
+					attrName = source.slice(start,p)
+				}
 				start = p+1;
 				p = source.indexOf(c,start)
 				if(p>0){
@@ -247,6 +263,7 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 		case ''://end document
 			//throw new Error('unexpected end of input')
 			errorHandler.error('unexpected end of input');
+			return ;
 		case '>':
 			switch(s){
 			case S_TAG:
@@ -270,7 +287,9 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 					errorHandler.warning('attribute "'+value+'" missed quot(")!!');
 					el.add(attrName,value.replace(/&#?\w+;/g,entityReplacer),start)
 				}else{
-					errorHandler.warning('attribute "'+value+'" missed value!! "'+value+'" instead!!')
+					if(currentNSMap[''] !== 'http://www.w3.org/1999/xhtml' || !value.match(/^(?:disabled|checked|selected)$/i)){
+						errorHandler.warning('attribute "'+value+'" missed value!! "'+value+'" instead!!')
+					}
 					el.add(value,value,start)
 				}
 				break;
@@ -315,7 +334,10 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 				//case S_ATTR:void();break;
 				//case S_V:void();break;
 				case S_ATTR_S:
-					errorHandler.warning('attribute "'+attrName+'" missed value!! "'+attrName+'" instead!!')
+					var tagName =  el.tagName;
+					if(currentNSMap[''] !== 'http://www.w3.org/1999/xhtml' || !attrName.match(/^(?:disabled|checked|selected)$/i)){
+						errorHandler.warning('attribute "'+attrName+'" missed value!! "'+attrName+'" instead2!!')
+					}
 					el.add(attrName,attrName,start);
 					start = p;
 					s = S_ATTR;
@@ -334,17 +356,18 @@ function parseElementStartPart(source,start,el,entityReplacer,errorHandler){
 					throw new Error("elements closed character '/' and '>' must be connected to");
 				}
 			}
-		}
+		}//end outer switch
+		//console.log('p++',p)
 		p++;
 	}
 }
 /**
- * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
+ * @return true if has new namespace define
  */
-function appendElement(el,domBuilder,parseStack){
+function appendElement(el,domBuilder,currentNSMap){
 	var tagName = el.tagName;
 	var localNSMap = null;
-	var currentNSMap = parseStack[parseStack.length-1].currentNSMap;
+	//var currentNSMap = parseStack[parseStack.length-1].currentNSMap;
 	var i = el.length;
 	while(i--){
 		var a = el[i];
@@ -383,7 +406,7 @@ function appendElement(el,domBuilder,parseStack){
 			if(prefix === 'xml'){
 				a.uri = 'http://www.w3.org/XML/1998/namespace';
 			}if(prefix !== 'xmlns'){
-				a.uri = currentNSMap[prefix]
+				a.uri = currentNSMap[prefix || '']
 				
 				//{console.log('###'+a.qName,domBuilder.locator.systemId+'',currentNSMap,a.uri)}
 			}
@@ -412,7 +435,8 @@ function appendElement(el,domBuilder,parseStack){
 	}else{
 		el.currentNSMap = currentNSMap;
 		el.localNSMap = localNSMap;
-		parseStack.push(el);
+		//parseStack.push(el);
+		return true;
 	}
 }
 function parseHtmlSpecialContent(source,elStartEnd,tagName,entityReplacer,domBuilder){

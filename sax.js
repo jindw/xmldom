@@ -33,7 +33,7 @@ XMLReader.prototype = {
 	}
 }
 function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
-	function fixedFromCharCode(code) {
+  function fixedFromCharCode(code) {
 		// String.prototype.fromCharCode does not supports
 		// > 2 bytes unicode chars directly
 		if (code > 0xffff) {
@@ -60,7 +60,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 	function appendText(end){//has some bugs
 		if(end>start){
 			var xt = source.substring(start,end).replace(/&#?\w+;/g,entityReplacer);
-			locator&&position(start);
+			locator&&position(end);
 			domBuilder.characters(xt,0,end-start);
 			start = end
 		}
@@ -68,7 +68,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 	function position(p,m){
 		while(p>=lineEnd && (m = linePattern.exec(source))){
 			lineStart = m.index;
-			lineEnd = lineStart + m[0].length;
+			lineEnd = lineStart + m[0].length - 1;
 			locator.lineNumber++;
 			//console.log('line++:',locator,startPos,endPos)
 		}
@@ -76,7 +76,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 	}
 	var lineStart = 0;
 	var lineEnd = 0;
-	var linePattern = /.+(?:\r\n?|\n)|.*$/g
+	var linePattern = /.*(\r\n?|\n)|.*$/gm
 	var locator = domBuilder.locator;
 	
 	var parseStack = [{currentNSMap:defaultNSMapCopy}]
@@ -580,5 +580,7 @@ function split(source,start){
 	}
 }
 
-exports.XMLReader = XMLReader;
+if(typeof require == 'function'){
+	exports.XMLReader = XMLReader;
+}
 

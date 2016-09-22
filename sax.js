@@ -76,7 +76,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 	}
 	var lineStart = 0;
 	var lineEnd = 0;
-	var linePattern = /.*(\r\n?|\n)|.*$/gm
+	var linePattern = /.*(\r\n?|\n)|.*$/g
 	var locator = domBuilder.locator;
 	
 	var parseStack = [{currentNSMap:defaultNSMapCopy}]
@@ -133,6 +133,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 				var end = parseElementStartPart(source,tagStart,el,entityReplacer,errorHandler);
 				var len = el.length;
 				
+				el.offset = copyLocator(locator, {});
 				if(locator){
 					if(len){
 						//attribute position fixed
@@ -580,7 +581,5 @@ function split(source,start){
 	}
 }
 
-if(typeof require == 'function'){
-	exports.XMLReader = XMLReader;
-}
+exports.XMLReader = XMLReader;
 

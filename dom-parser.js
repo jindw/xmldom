@@ -89,7 +89,7 @@ DOMHandler.prototype = {
 	    appendElement(this, el);
 	    this.currentElement = el;
 	    
-		this.locator && position(this.locator,el)
+		this.locator && position(attrs.offset || this.locator,el)
 	    for (var i = 0 ; i < len; i++) {
 	        var namespaceURI = attrs.getURI(i);
 	        var value = attrs.getValue(i);
@@ -120,8 +120,13 @@ DOMHandler.prototype = {
 	},
 	characters:function(chars, start, length) {
 		chars = _toString.apply(this,arguments)
+		var colWrong = false;
 		//console.log(chars)
-		if(this.currentElement && chars){
+		if(this.currentElement && chars && chars.trim()){
+			if (chars[0] == '\n') {
+				chars = chars.substring(1);
+				colWrong = true;
+			}
 			if (this.cdata) {
 				var charNode = this.document.createCDATASection(chars);
 				this.currentElement.appendChild(charNode);
@@ -130,6 +135,11 @@ DOMHandler.prototype = {
 				this.currentElement.appendChild(charNode);
 			}
 			this.locator && position(this.locator,charNode)
+		}
+		if (colWrong) {
+			var spaces = chars.match(/^( |\t)*/);
+			var numSpaces = spaces ? spaces[0].length : 0;
+			charNode.columnNumber = numSpaces;
 		}
 	},
 	skippedEntity:function(name) {

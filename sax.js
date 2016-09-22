@@ -128,12 +128,12 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 				locator&&position(tagStart);
 				
 				var el = new ElementAttributes();
+				el.offset = copyLocator(locator, {});
 				
 				//elStartEnd
 				var end = parseElementStartPart(source,tagStart,el,entityReplacer,errorHandler);
 				var len = el.length;
-				
-				el.offset = copyLocator(locator, {});
+
 				if(locator){
 					if(len){
 						//attribute position fixed

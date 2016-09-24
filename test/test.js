@@ -3,7 +3,6 @@ var assert = require('assert');
 var DOMParser = require('xmldom').DOMParser;
 var XMLSerializer = require('xmldom').XMLSerializer;
 
-
 var doc = new DOMParser().parseFromString('<xml xmlns="http://test.com" id="root">' +
 	'<child1 id="a1" title="1"><child11 id="a2"  title="2"/></child1>' +
 	'<child2 id="a1"   title="3"/><child3 id="a1"   title="3"/></xml>','text/xml');
@@ -22,7 +21,6 @@ var str3=new XMLSerializer().serializeToString(doc3);
 var str4=new XMLSerializer().serializeToString(doc4);
 console.assert(str1 == str3,str3,str1);
 //console.assert(str3 != str4 && str3.length == str4.length,str3);
-
 
 var xmlString = '<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">\n<ds:SignatureValue/>\n</ds:Signature>';
 var xml = new DOMParser().parseFromString(xmlString, "application/xml");

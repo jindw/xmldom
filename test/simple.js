@@ -9,7 +9,6 @@ var parser = new DomParser({ locator:{}, errorHandler: domErrorHandler });
 var dom = parser.parseFromString(fileContents, "text/xml");
 console.log('dom-result:'+dom)
 
-
 var svgCase = [
 '<svg>',
 '  <metadata>...</metadata>',
@@ -26,8 +25,8 @@ console.log('svgCase-result:'+dom)
 wows.describe('errorHandle').addBatch({
   'simple': function() {
     var parser = new DOMParser();
-	var doc = parser.parseFromString('<html><body title="1<2"></body></html>', 'text/html');
-	console.log(doc+'');
+    var doc = parser.parseFromString('<html><body title="1<2"></body></html>', 'text/html');
+	  console.log(doc+'');
   }
 }).run();
 
@@ -40,7 +39,6 @@ var xmlLineError=[
 '         packageVersion="1">',
 '  <co id="0" binds="1">',
 '</package>'].join('\r\n');
-
 
 var dom = parser.parseFromString(xmlLineError, "text/xml");
 console.log('xmlLineError-result:'+dom)

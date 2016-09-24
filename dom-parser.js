@@ -1,6 +1,6 @@
 function DOMParser(options){
 	this.options = options ||{locator:{}};
-	
+
 }
 DOMParser.prototype.parseFromString = function(source,mimeType){
 	var options = this.options;
@@ -13,7 +13,7 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	if(locator){
 		domBuilder.setDocumentLocator(locator)
 	}
-	
+
 	sax.errorHandler = buildErrorHandler(errorHandler,domBuilder,locator);
 	sax.domBuilder = options.domBuilder || domBuilder;
 	if(/\/x?html?$/.test(mimeType)){
@@ -29,6 +29,7 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	}
 	return domBuilder.document;
 }
+
 function buildErrorHandler(errorImpl,domBuilder,locator){
 	if(!errorImpl){
 		if(domBuilder instanceof DOMHandler){
@@ -58,8 +59,8 @@ function buildErrorHandler(errorImpl,domBuilder,locator){
 /**
  * +ContentHandler+ErrorHandler
  * +LexicalHandler+EntityResolver2
- * -DeclHandler-DTDHandler 
- * 
+ * -DeclHandler-DTDHandler
+ *
  * DefaultHandler:EntityResolver, DTDHandler, ContentHandler, ErrorHandler
  * DefaultHandler2:DefaultHandler,LexicalHandler, DeclHandler, EntityResolver2
  * @link http://www.saxproject.org/apidoc/org/xml/sax/helpers/DefaultHandler.html
@@ -67,14 +68,16 @@ function buildErrorHandler(errorImpl,domBuilder,locator){
 function DOMHandler() {
     this.cdata = false;
 }
+
 function position(locator,node){
 	node.lineNumber = locator.lineNumber;
 	node.columnNumber = locator.columnNumber;
 }
+
 /**
  * @see org.xml.sax.ContentHandler#startDocument
  * @link http://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html
- */ 
+ */
 DOMHandler.prototype = {
 	startDocument : function() {
     	this.document = new DOMImplementation().createDocument(null, null, null);
@@ -84,23 +87,23 @@ DOMHandler.prototype = {
 	},
 	startElement:function(namespaceURI, localName, qName, attrs) {
 		var doc = this.document;
-	    var el = doc.createElementNS(namespaceURI, qName||localName);
-	    var len = attrs.length;
-	    appendElement(this, el);
-	    this.currentElement = el;
-	    
+    var el = doc.createElementNS(namespaceURI, qName||localName);
+    var len = attrs.length;
+    appendElement(this, el);
+    this.currentElement = el;
 		this.locator && position(this.locator,el)
-	    for (var i = 0 ; i < len; i++) {
-	        var namespaceURI = attrs.getURI(i);
-	        var value = attrs.getValue(i);
-	        var qName = attrs.getQName(i);
+
+    for (var i = 0 ; i < len; i++) {
+      var namespaceURI = attrs.getURI(i);
+      var value = attrs.getValue(i);
+      var qName = attrs.getQName(i);
 			var attr = doc.createAttributeNS(namespaceURI, qName);
 			if( attr.getOffset){
 				position(attr.getOffset(1),attr)
 			}
 			attr.value = attr.nodeValue = value;
 			el.setAttributeNode(attr)
-	    }
+    }
 	},
 	endElement:function(namespaceURI, localName, qName) {
 		var current = this.currentElement
@@ -149,7 +152,6 @@ DOMHandler.prototype = {
 	    this.locator && position(this.locator,comm)
 	    appendElement(this, comm);
 	},
-	
 	startCDATA:function() {
 	    //used in characters() methods
 	    this.cdata = true;
@@ -157,7 +159,6 @@ DOMHandler.prototype = {
 	endCDATA:function() {
 	    this.cdata = false;
 	},
-	
 	startDTD:function(name, publicId, systemId) {
 		var impl = this.document.implementation;
 	    if (impl && impl.createDocumentType) {
@@ -181,11 +182,13 @@ DOMHandler.prototype = {
 	    throw error;
 	}
 }
+
 function _locator(l){
 	if(l){
 		return '\n@'+(l.systemId ||'')+'#[line:'+l.lineNumber+',col:'+l.columnNumber+']'
 	}
 }
+
 function _toString(chars,start,length){
 	if(typeof chars == 'string'){
 		return chars.substr(start,length)
@@ -234,11 +237,11 @@ function _toString(chars,start,length){
 
 /* Private static helpers treated below as private instance methods, so don't need to add these to the public API; we might use a Relator to also get rid of non-standard public properties */
 function appendElement (hander,node) {
-    if (!hander.currentElement) {
-        hander.document.appendChild(node);
-    } else {
-        hander.currentElement.appendChild(node);
-    }
+  if (!hander.currentElement) {
+      hander.document.appendChild(node);
+  } else {
+      hander.currentElement.appendChild(node);
+  }
 }//appendChild and setAttributeNS are preformance key
 
 //if(typeof require == 'function'){

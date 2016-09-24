@@ -17,6 +17,7 @@ function xmldom(data){
 	}
 	return doc;
 }
+
 function libxml(data){
 	if(Libxml){
 		console.time('libxml');
@@ -39,14 +40,16 @@ function domjs(data){
 	    doc = dom;
 	});
 	console.timeEnd('dom-js');
-	
+
 	doc.toString = function(){
 		return doc.toXml();
 	}
 	return doc
 }
+
 var maxRandomAttr =parseInt(Math.random()*60);
 console.log('maxRandomAttr',maxRandomAttr)
+
 function addAttributes(el){
 	var c =parseInt(Math.random()*maxRandomAttr);
 	while(c--){
@@ -63,6 +66,7 @@ function addAttributes(el){
 		child = child.nextSibling;
 	}
 }
+
 // Create a Test Suite
 wows.describe('XML Node Parse').addBatch({
     "big file parse":function(){
@@ -81,11 +85,10 @@ wows.describe('XML Node Parse').addBatch({
 		var xmldomTime = t2-t1;
 		var domjsTime = t3-t2;
 		console.assert(domjsTime>xmldomTime,'xmldom performance must more height!!')
-		
-		
+
 		doc1 = doc1.cloneNode(true);
 		addAttributes(doc1.documentElement);
-		
+
 		data = doc1.toString();
 		console.log('test more attribute xml')
 		var t1 = new Date();
@@ -101,20 +104,20 @@ wows.describe('XML Node Parse').addBatch({
 		function xmlReplace(a,v){
 			switch(v){
 			case '&':
-			return '&amp;'
+				return '&amp;'
 			case '<':
-			return '&lt;'
+				return '&lt;'
 			default:
-			if(v.length>1){
-				return v.replace(/([&<])/g,xmlReplace)
-			}
+				if(v.length>1){
+					return v.replace(/([&<])/g,xmlReplace)
+				}
 			}
 		}
 		xmldomresult = (domjs(doc1+'')+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[([\s\S]*?)\]\]>/g,xmlReplace)
 		domjsresult = (doc2+'').replace(/^<\?.*?\?>\s*|<!\[CDATA\[([\s\S]*?)\]\]>/g,xmlReplace)
 		data = xmldomresult;
 		//console.log(data.substring(100,200))
-		
+
 		console.log('test more attribute xml without cdata')
 		var t1 = new Date();
 		var doc1 = xmldom(data);
@@ -126,9 +129,9 @@ wows.describe('XML Node Parse').addBatch({
 		var xmldomTime = t2-t1;
 		var domjsTime = t3-t2;
 		console.assert(domjsTime>xmldomTime,'xmldom performance must more height!!')
-		
+
 		//console.log(xmldomresult,domjsresult)
-		
+
 		//assert.equal(xmldomresult,domjsresult);
 		//,xmldomresult,domjsresult)
 		if(xmldomresult !== domjsresult){
@@ -144,8 +147,7 @@ wows.describe('XML Node Parse').addBatch({
 					console.assert(xmldomresult == domjsresult)
 					break;
 				}
-			} 
-			
+			}
 		}
 		//console.assert(xmldomresult == domjsresult,xmldomresult.length,i)
     }

@@ -5,9 +5,9 @@ try{
 }catch(e){
 	var DomJS = require("dom-js");
 }
-
 var assert = require('assert');
-var oldParser = DOMParser.prototype.parseFromString ;
+var oldParser = DOMParser.prototype.parseFromString;
+
 function format(s){
 	if(libxml){
 		var result = libxml.parseXmlString(s).toString().replace(/^\s+|\s+$/g,'');
@@ -15,11 +15,12 @@ function format(s){
 	}else{
 		var domjs = new DomJS.DomJS();
 		domjs.parse(s, function(err, dom) {
-	  	  result = dom.toXml();
+	  	result = dom.toXml();
 		});
 	}
 	return result;
 }
+
 function check(data,doc){
 	var domjsresult = format(data);
 	var xmldomresult = new XMLSerializer().serializeToString(doc);
@@ -31,8 +32,8 @@ function check(data,doc){
 	if(xmldomresult!=domjsresult){
 		assert.equal(format(xmldomresult),domjsresult);
 	}
-	
 }
+
 DOMParser.prototype.parseFromString = function(data,mimeType){
 	var doc = oldParser.apply(this,arguments);
 	function ck(){
@@ -43,10 +44,11 @@ DOMParser.prototype.parseFromString = function(data,mimeType){
 		}
 	}
 	if(this.options.checkLater){
-	setTimeout(ck,1);
+		setTimeout(ck,1);
 	}else{ck()}
 	return doc;
 }
+
 function include(){
 	for(var i=0;i<arguments.length;i++){
 		var file = arguments[i]
@@ -54,11 +56,9 @@ function include(){
 		require(file);
 	}
 }
+
 include('./dom','./parse-element','./node','./namespace','./html/normalize'
 		,'./error','./locator'
 		,'./big-file-performance'
 		,"./xml-error"
 		)
-
-
-

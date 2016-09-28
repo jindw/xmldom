@@ -75,7 +75,7 @@ wows.describe('XML Node Parse').addBatch({
     "big file parse":function(){
 		var fs = require('fs');
 		var path = require('path')
-		var data = fs.readFileSync(path.resolve(__dirname,'./test.xml'), 'ascii');
+		var data = fs.readFileSync(path.resolve(__dirname,'./file-test1.xml'), 'ascii');
 		//data = "<?xml version=\"1.0\"?><xml><child> ![CDATA[v]] d &amp;</child>\n</xml>"
 		console.log('test simple xml')
 		var t1 = new Date();

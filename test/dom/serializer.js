@@ -9,7 +9,7 @@ wows.describe('XML Serializer').addBatch({
   },
   '<script> element with no children': function() {
     var doc = new DOMParser({xmlns:{xmlns:'http://www.w3.org/1999/xhtml'}}).parseFromString('<html2><script></script></html2>', 'text/html');
-    console.log(doc.documentElement.firstChild.toString(true))
+    //console.log(doc.documentElement.firstChild.toString(true))
     console.assert(doc.documentElement.firstChild.toString() == '<script></script>');
   },
 }).run();

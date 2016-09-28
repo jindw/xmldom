@@ -24,7 +24,7 @@ var error = []
     	errorHandler:{
 			error:function(msg){
 				error.push(msg);
-				throw new Error(msg)
+				//throw new Error(msg)
 			}
 		}
 	});

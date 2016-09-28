@@ -1019,11 +1019,16 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
 			buf.push('>');
 			//if is cdata child node
-			/*if(isHTML && /^script$/i.test(nodeName)){
-				if(child){
-					buf.push(child.data);
+			if(isHTML && /^script$/i.test(nodeName)){
+				while(child){
+					if(child.data){
+						buf.push(child.data);
+					}else{
+						serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);
+					}
+					child = child.nextSibling;
 				}
-			}else*/
+			}else
 			{
 				while(child){
 					serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);

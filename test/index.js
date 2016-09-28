@@ -7,6 +7,8 @@ try{
 }
 
 var assert = require('assert');
+
+
 var oldParser = DOMParser.prototype.parseFromString ;
 function format(s){
 	if(libxml){
@@ -53,15 +55,9 @@ function include(){
 	}
 }
 include('./dom'
-		,'./parse-element'
-		,'./node','./namespace','./html/normalize'
 		,'./error'
-		
-		,'./locator'
-		,'./big-file-performance'
-		,"./xml-error"
-		,"./file-test.js"
-		,"./test-doc-witespace.js"
+		,'./html/normalize'
+		,'./parse'
 		//*/
 		)
 

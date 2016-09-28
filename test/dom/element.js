@@ -1,5 +1,6 @@
 var wows = require('vows');
 var DOMParser = require('xmldom').DOMParser;
+var assert = require('assert')
 var XMLSerializer = require('xmldom').XMLSerializer;
 // Create a Test Suite
 wows.describe('XML Namespace Parse').addBatch({
@@ -43,8 +44,9 @@ wows.describe('XML Namespace Parse').addBatch({
        
 		var feed = new DOMParser().parseFromString('<feed><entry>foo</entry></feed>');
 		var entries = feed.documentElement.getElementsByTagName('entry');
-		console.log(entries[0].nodeName);
-       console.log(feed.documentElement.childNodes.item(0).nodeName);
+		assert.equal(entries.length , 1,'assert entry nodelist length ==1');
+		console.assert(entries[0].nodeName=='entry');
+        console.assert(feed.documentElement.childNodes.item(0).nodeName=='entry');
     },
     'getElementsByTagNameNS': function () { 
        var doc = new DOMParser().parseFromString('<xml xmlns="http://test.com" xmlns:t="http://test.com" xmlns:t2="http://test2.com">' +
@@ -66,11 +68,11 @@ wows.describe('XML Namespace Parse').addBatch({
        console.assert(childs.length==3,childs.length);
 
        var childs = doc.getElementsByTagNameNS("*", "test");
-       console.log([].join.apply(childs,['\n@']))
-       //console.assert(childs.length==4,childs.length);
+       //console.log([].join.apply(childs,['\n@']))
+       console.assert(childs.length==4,childs.length);
 
        var childs = doc.documentElement.getElementsByTagNameNS("*", "test");
-       console.log(childs.length)
+       //console.log(childs.length)
        console.assert(childs.length==4,childs.length);
        
     },

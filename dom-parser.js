@@ -95,9 +95,7 @@ DOMHandler.prototype = {
 	        var value = attrs.getValue(i);
 	        var qName = attrs.getQName(i);
 			var attr = doc.createAttributeNS(namespaceURI, qName);
-			if( attr.getOffset){
-				position(attr.getOffset(1),attr)
-			}
+			this.locator &&position(attrs.getLocator(i),attr);
 			attr.value = attr.nodeValue = value;
 			el.setAttributeNode(attr)
 	    }

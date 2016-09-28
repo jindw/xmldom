@@ -7,16 +7,16 @@ var tagNamePattern = new RegExp('^'+nameStartChar.source+nameChar.source+'*(?:\:
 //var tagNamePattern = /^[a-zA-Z_][\w\-\.]*(?:\:[a-zA-Z_][\w\-\.]*)?$/
 //var handlers = 'resolveEntity,getExternalSubset,characters,endDocument,endElement,endPrefixMapping,ignorableWhitespace,processingInstruction,setDocumentLocator,skippedEntity,startDocument,startElement,startPrefixMapping,notationDecl,unparsedEntityDecl,error,fatalError,warning,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,comment,endCDATA,endDTD,endEntity,startCDATA,startDTD,startEntity'.split(',')
 
-//S_TAG,	S_ATTR,	S_EQ,	S_V
-//S_ATTR_S,	S_E,	S_S,	S_C
+//S_TAG,	S_ATTR,	S_EQ,	S_ATTR_NOQUOT_VALUE
+//S_ATTR_SPACE,	S_ATTR_END,	S_TAG_SPACE, S_TAG_CLOSE
 var S_TAG = 0;//tag name offerring
 var S_ATTR = 1;//attr name offerring 
-var S_ATTR_S=2;//attr name end and space offer
+var S_ATTR_SPACE=2;//attr name end and space offer
 var S_EQ = 3;//=space?
-var S_V = 4;//attr value(no quot value only)
-var S_E = 5;//attr value end and no space(quot end)
-var S_S = 6;//(attr value end || tag end ) && (space offer)
-var S_C = 7;//closed el<el />
+var S_ATTR_NOQUOT_VALUE = 4;//attr value(no quot value only)
+var S_ATTR_END = 5;//attr value end and no space(quot end)
+var S_TAG_SPACE = 6;//(attr value end || tag end ) && (space offer)
+var S_TAG_CLOSE = 7;//closed el<el />
 
 function XMLReader(){
 	
@@ -76,7 +76,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 	}
 	var lineStart = 0;
 	var lineEnd = 0;
-	var linePattern = /.+(?:\r\n?|\n)|.*$/g
+	var linePattern = /.*(?:\r\n?|\n)|.*$/g
 	var locator = domBuilder.locator;
 	
 	var parseStack = [{currentNSMap:defaultNSMapCopy}]
@@ -101,8 +101,19 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 			case '/':
 				var end = source.indexOf('>',tagStart+3);
 				var tagName = source.substring(tagStart+2,end);
-				//console.error(parseStack.length,parseStack)
 				var config = parseStack.pop();
+				if(end<0){
+					
+	        		tagName = source.substring(tagStart+2).replace(/[\s<].*/,'');
+	        		//console.error('#@@@@@@'+tagName)
+	        		errorHandler.error("end tag name: "+tagName+' is not complete:'+config.tagName);
+	        		end = tagStart+1+tagName.length;
+	        	}else if(tagName.match(/\s</)){
+	        		tagName = tagName.replace(/[\s<].*/,'');
+	        		errorHandler.error("end tag name: "+tagName+' maybe not complete');
+	        		end = tagStart+1+tagName.length;
+				}
+				//console.error(parseStack.length,parseStack)
 				//console.error(config);
 				var localNSMap = config.localNSMap;
 				var endMatch = config.tagName == tagName;
@@ -114,10 +125,10 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 							domBuilder.endPrefixMapping(prefix) ;
 						}
 					}
-					if(!endMatch)
-		            errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+					if(!endMatch){
+		            	errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+					}
 		        }else{
-		        	errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
 		        	parseStack.push(config)
 		        }
 				
@@ -140,26 +151,33 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 				var end = parseElementStartPart(source,tagStart,el,currentNSMap,entityReplacer,errorHandler);
 				var len = el.length;
 				
-				if(locator){
-					if(len){
-						//attribute position fixed
-						for(var i = 0;i<len;i++){
-							var a = el[i];
-							position(a.offset);
-							a.offset = copyLocator(locator,{});
-						}
-					}
-					position(end);
-				}
+				
 				if(!el.closed && fixSelfClosed(source,end,el.tagName,closeMap)){
 					el.closed = true;
 					if(!entityMap.nbsp){
 						errorHandler.warning('unclosed xml attribute');
 					}
 				}
-				if(appendElement(el,domBuilder,currentNSMap)){
-					parseStack.push(el)
+				if(locator && len){
+					var locator2 = copyLocator(locator,{});
+					//try{//attribute position fixed
+					for(var i = 0;i<len;i++){
+						var a = el[i];
+						position(a.offset);
+						a.locator = copyLocator(locator,{});
+					}
+					//}catch(e){console.error('@@@@@'+e)}
+					domBuilder.locator = locator2
+					if(appendElement(el,domBuilder,currentNSMap)){
+						parseStack.push(el)
+					}
+					domBuilder.locator = locator;
+				}else{
+					if(appendElement(el,domBuilder,currentNSMap)){
+						parseStack.push(el)
+					}
 				}
+				
 				
 				
 				if(el.uri === 'http://www.w3.org/1999/xhtml' && !el.closed){
@@ -169,7 +187,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 				}
 			}
 		}catch(e){
-			console.error(e)
+			errorHandler.error('element parse error: '+e)
 			//errorHandler.error('element parse error: '+e);
 			end = -1;
 			//throw e;
@@ -204,7 +222,7 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 			if(s === S_ATTR){//attrName
 				attrName = source.slice(start,p);
 				s = S_EQ;
-			}else if(s === S_ATTR_S){
+			}else if(s === S_ATTR_SPACE){
 				s = S_EQ;
 			}else{
 				//fatalError: equal must after attrName or space after attrName
@@ -213,7 +231,7 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 			break;
 		case '\'':
 		case '"':
-			if(s === S_EQ || s === S_ATTR //|| s == S_ATTR_S
+			if(s === S_EQ || s === S_ATTR //|| s == S_ATTR_SPACE
 				){//equal
 				if(s === S_ATTR){
 					errorHandler.warning('attribute value must after "="')
@@ -224,19 +242,19 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				if(p>0){
 					value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
 					el.add(attrName,value,start-1);
-					s = S_E;
+					s = S_ATTR_END;
 				}else{
 					//fatalError: no end quot match
 					throw new Error('attribute value no end \''+c+'\' match');
 				}
-			}else if(s == S_V){
+			}else if(s == S_ATTR_NOQUOT_VALUE){
 				value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
 				//console.log(attrName,value,start,p)
 				el.add(attrName,value,start);
 				//console.dir(el)
 				errorHandler.warning('attribute "'+attrName+'" missed start quot('+c+')!!');
 				start = p+1;
-				s = S_E
+				s = S_ATTR_END
 			}else{
 				//fatalError: no equal before
 				throw new Error('attribute value must after "="');
@@ -246,14 +264,14 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 			switch(s){
 			case S_TAG:
 				el.setTagName(source.slice(start,p));
-			case S_E:
-			case S_S:
-			case S_C:
-				s = S_C;
+			case S_ATTR_END:
+			case S_TAG_SPACE:
+			case S_TAG_CLOSE:
+				s =S_TAG_CLOSE;
 				el.closed = true;
-			case S_V:
+			case S_ATTR_NOQUOT_VALUE:
 			case S_ATTR:
-			case S_ATTR_S:
+			case S_ATTR_SPACE:
 				break;
 			//case S_EQ:
 			default:
@@ -263,27 +281,30 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 		case ''://end document
 			//throw new Error('unexpected end of input')
 			errorHandler.error('unexpected end of input');
-			return ;
+			if(s == S_TAG){
+				el.setTagName(source.slice(start,p));
+			}
+			return p;
 		case '>':
 			switch(s){
 			case S_TAG:
 				el.setTagName(source.slice(start,p));
-			case S_E:
-			case S_S:
-			case S_C:
+			case S_ATTR_END:
+			case S_TAG_SPACE:
+			case S_TAG_CLOSE:
 				break;//normal
-			case S_V://Compatible state
+			case S_ATTR_NOQUOT_VALUE://Compatible state
 			case S_ATTR:
 				value = source.slice(start,p);
 				if(value.slice(-1) === '/'){
 					el.closed  = true;
 					value = value.slice(0,-1)
 				}
-			case S_ATTR_S:
-				if(s === S_ATTR_S){
+			case S_ATTR_SPACE:
+				if(s === S_ATTR_SPACE){
 					value = attrName;
 				}
-				if(s == S_V){
+				if(s == S_ATTR_NOQUOT_VALUE){
 					errorHandler.warning('attribute "'+value+'" missed quot(")!!');
 					el.add(attrName,value.replace(/&#?\w+;/g,entityReplacer),start)
 				}else{
@@ -306,34 +327,34 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				switch(s){
 				case S_TAG:
 					el.setTagName(source.slice(start,p));//tagName
-					s = S_S;
+					s = S_TAG_SPACE;
 					break;
 				case S_ATTR:
 					attrName = source.slice(start,p)
-					s = S_ATTR_S;
+					s = S_ATTR_SPACE;
 					break;
-				case S_V:
+				case S_ATTR_NOQUOT_VALUE:
 					var value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
 					errorHandler.warning('attribute "'+value+'" missed quot(")!!');
 					el.add(attrName,value,start)
-				case S_E:
-					s = S_S;
+				case S_ATTR_END:
+					s = S_TAG_SPACE;
 					break;
-				//case S_S:
+				//case S_TAG_SPACE:
 				//case S_EQ:
-				//case S_ATTR_S:
+				//case S_ATTR_SPACE:
 				//	void();break;
-				//case S_C:
+				//case S_TAG_CLOSE:
 					//ignore warning
 				}
 			}else{//not space
-//S_TAG,	S_ATTR,	S_EQ,	S_V
-//S_ATTR_S,	S_E,	S_S,	S_C
+//S_TAG,	S_ATTR,	S_EQ,	S_ATTR_NOQUOT_VALUE
+//S_ATTR_SPACE,	S_ATTR_END,	S_TAG_SPACE, S_TAG_CLOSE
 				switch(s){
 				//case S_TAG:void();break;
 				//case S_ATTR:void();break;
-				//case S_V:void();break;
-				case S_ATTR_S:
+				//case S_ATTR_NOQUOT_VALUE:void();break;
+				case S_ATTR_SPACE:
 					var tagName =  el.tagName;
 					if(currentNSMap[''] !== 'http://www.w3.org/1999/xhtml' || !attrName.match(/^(?:disabled|checked|selected)$/i)){
 						errorHandler.warning('attribute "'+attrName+'" missed value!! "'+attrName+'" instead2!!')
@@ -342,17 +363,17 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 					start = p;
 					s = S_ATTR;
 					break;
-				case S_E:
+				case S_ATTR_END:
 					errorHandler.warning('attribute space is required"'+attrName+'"!!')
-				case S_S:
+				case S_TAG_SPACE:
 					s = S_ATTR;
 					start = p;
 					break;
 				case S_EQ:
-					s = S_V;
+					s = S_ATTR_NOQUOT_VALUE;
 					start = p;
 					break;
-				case S_C:
+				case S_TAG_CLOSE:
 					throw new Error("elements closed character '/' and '>' must be connected to");
 				}
 			}
@@ -466,7 +487,11 @@ function fixSelfClosed(source,elStartEnd,tagName,closeMap){
 	var pos = closeMap[tagName];
 	if(pos == null){
 		//console.log(tagName)
-		pos = closeMap[tagName] = source.lastIndexOf('</'+tagName+'>')
+		pos =  source.lastIndexOf('</'+tagName+'>')
+		if(pos<elStartEnd){//忘记闭合
+			pos = source.lastIndexOf('</'+tagName)
+		}
+		closeMap[tagName] =pos
 	}
 	return pos<elStartEnd;
 	//} 
@@ -557,7 +582,7 @@ ElementAttributes.prototype = {
 	},
 	length:0,
 	getLocalName:function(i){return this[i].localName},
-	getOffset:function(i){return this[i].offset},
+	getLocator:function(i){return this[i].locator},
 	getQName:function(i){return this[i].qName},
 	getURI:function(i){return this[i].uri},
 	getValue:function(i){return this[i].value}

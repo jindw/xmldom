@@ -382,7 +382,7 @@ Node.prototype = {
     				}
     			}
     		}
-    		el = el.nodeType == 2?el.ownerDocument : el.parentNode;
+    		el = el.nodeType == ATTRIBUTE_NODE?el.ownerDocument : el.parentNode;
     	}
     	return null;
     },
@@ -397,7 +397,7 @@ Node.prototype = {
     				return map[prefix] ;
     			}
     		}
-    		el = el.nodeType == 2?el.ownerDocument : el.parentNode;
+    		el = el.nodeType == ATTRIBUTE_NODE?el.ownerDocument : el.parentNode;
     	}
     	return null;
     },
@@ -582,7 +582,7 @@ Document.prototype = {
 			}
 			return newChild;
 		}
-		if(this.documentElement == null && newChild.nodeType == 1){
+		if(this.documentElement == null && newChild.nodeType == ELEMENT_NODE){
 			this.documentElement = newChild;
 		}
 		
@@ -602,7 +602,7 @@ Document.prototype = {
 	getElementById :	function(id){
 		var rtv = null;
 		_visitNode(this.documentElement,function(node){
-			if(node.nodeType == 1){
+			if(node.nodeType == ELEMENT_NODE){
 				if(node.getAttribute('id') == id){
 					rtv = node;
 					return true;
@@ -1186,8 +1186,8 @@ try{
 			},
 			set:function(data){
 				switch(this.nodeType){
-				case 1:
-				case 11:
+				case ELEMENT_NODE:
+				case DOCUMENT_FRAGMENT_NODE:
 					while(this.firstChild){
 						this.removeChild(this.firstChild);
 					}
@@ -1206,8 +1206,8 @@ try{
 		
 		function getTextContent(node){
 			switch(node.nodeType){
-			case 1:
-			case 11:
+			case ELEMENT_NODE:
+			case DOCUMENT_FRAGMENT_NODE:
 				var buf = [];
 				node = node.firstChild;
 				while(node){

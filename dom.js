@@ -828,10 +828,7 @@ CharacterData.prototype = {
 	
 	},
 	appendChild:function(newChild){
-		//if(!(newChild instanceof CharacterData)){
-			throw new Error(ExceptionMessage[3])
-		//}
-		return Node.prototype.appendChild.apply(this,arguments)
+		throw new Error(ExceptionMessage[HIERARCHY_REQUEST_ERR])
 	},
 	deleteData: function(offset, count) {
 		this.replaceData(offset,count,"");
@@ -939,7 +936,8 @@ function nodeSerializeToString(isHtml,nodeFilter){
 	return buf.join('');
 }
 function needNamespaceDefine(node,isHTML, visibleNamespaces) {
-	var prefix = node.prefix,uri = node.namespaceURI;
+	var prefix = node.prefix||'';
+	var uri = node.namespaceURI;
 	if (!prefix && !uri){
 		return false;
 	}
@@ -1005,15 +1003,21 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		for(var i=0;i<len;i++){
 			var attr = attrs.item(i);
 			if (needNamespaceDefine(attr,isHTML, visibleNamespaces)) {
-				buf.push(attr.prefix ? ' xmlns:' + attr.prefix : " xmlns", "='" , attr.namespaceURI , "'");
-				visibleNamespaces.push({ prefix: attr.prefix, namespace: attr.namespaceURI });
+				var prefix = attr.prefix||'';
+				var uri = attr.namespaceURI;
+				var ns = prefix ? ' xmlns:' + prefix : " xmlns";
+				buf.push(ns, '="' , uri , '"');
+				visibleNamespaces.push({ prefix: prefix, namespace:uri });
 			}
 			serializeToString(attr,buf,isHTML,nodeFilter,visibleNamespaces);
 		}
 		// add namespace for current node		
 		if (needNamespaceDefine(node,isHTML, visibleNamespaces)) {
-			buf.push(node.prefix ? ' xmlns:' + node.prefix : " xmlns", "='" , node.namespaceURI , "'");
-			visibleNamespaces.push({ prefix: node.prefix, namespace: node.namespaceURI });
+			var prefix = node.prefix||'';
+			var uri = node.namespaceURI;
+			var ns = prefix ? ' xmlns:' + prefix : " xmlns";
+			buf.push(ns, '="' , uri , '"');
+			visibleNamespaces.push({ prefix: prefix, namespace:uri });
 		}
 		
 		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){

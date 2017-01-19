@@ -21,7 +21,7 @@ function _extends(Class,Super){
 		pt.__proto__ = ppt;
 	}
 	if(!(pt instanceof Super)){
-		function t(){};
+		var t = function(){};
 		t.prototype = Super.prototype;
 		t = new t();
 		copy(pt,t);
@@ -1212,8 +1212,8 @@ try{
 				}
 			}
 		})
-		
-		function getTextContent(node){
+
+		var getTextContent = function(node){
 			switch(node.nodeType){
 			case ELEMENT_NODE:
 			case DOCUMENT_FRAGMENT_NODE:

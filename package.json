@@ -1,6 +1,6 @@
 {
   "name": "xmldom",
-  "version": "0.1.22",
+  "version": "0.1.27",
   "description": "A W3C Standard XML DOM(Level2 CORE) implementation and parser(DOMParser/XMLSerializer).",
   "keywords": ["w3c","dom","xml","parser","javascript","DOMParser","XMLSerializer"],
   "author": "jindw <jindw@xidea.org> (http://www.xidea.org)",
@@ -18,5 +18,5 @@
     {"name" : "Alan Gutierrez","email" : "alan@prettyrobots.com","web" : "http://www.prettyrobots.com/"}
   ],
   "bugs": {"email": "jindw@xidea.org","url": "http://github.com/jindw/xmldom/issues"},
-  "licenses": [{"type": "LGPL","url": "http://www.gnu.org/licenses/lgpl.html","MIT":"http://opensource.org/licenses/MIT"}]
+  "license": "(LGPL-2.0 or MIT)"
 }

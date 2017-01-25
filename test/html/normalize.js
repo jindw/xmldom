@@ -68,12 +68,13 @@ wows.describe('html normalizer').addBatch({
     	
 	},
     'script': function () { 
+    	console.log(1112224441)
     	var dom = new DOMParser().parseFromString('<script>alert(a<b&&c?"<br>":">>");</script>','text/html');
     	console.assert(dom == '<script>alert(a<b&&c?"<br>":">>");</script>',dom+'')
-    	
+    	console.log(1122211)
     	var dom = new DOMParser().parseFromString('<script>alert(a<b&&c?"<br>":">>");</script>','text/xml');
     	console.assert(dom == '<script>alert(a&lt;b&amp;&amp;c?"<br/>":">>");</script>',dom+'')
-    	
+    	console.log(1111)
     	var dom = new DOMParser().parseFromString('<script>alert(a<b&&c?"<br/>":">>");</script>','text/html');
     	console.assert(dom == '<script>alert(a<b&&c?"<br/>":">>");</script>',dom+'')
     	

@@ -1,6 +1,6 @@
 var vows = require('vows');
 var DOMParser = require('xmldom').DOMParser;
-
+var assert = require('assert');
 
 
 vows.describe('errorHandle').addBatch({
@@ -44,11 +44,14 @@ vows.describe('errorHandle').addBatch({
 				errors.push(key, msg)
 			}
 		});
-		console.log('loop');
+		//console.log('loop');
 		var dom = new DOMParser().parseFromString('<test><!--', 'text/xml')
 		//var dom = new DOMParser().parseFromString('<div><p><a></a><b></b></p></div>', 'text/html');
-		console.log(dom+'')
+		//console.log(dom+'')
+		assert.equal(dom.documentElement+'' , '<test/>')
 		var dom = p.parseFromString('<r', 'text/xml');
+		//console.log(dom.documentElement)
+		assert.equal(dom.documentElement+'' , '<r/>')
   },
   'invalid xml attribute(miss qute)': function() {
   	var errors = [];
@@ -63,15 +66,10 @@ vows.describe('errorHandle').addBatch({
 	console.assert(errors.length,"invalid xml attribute(miss qute)")
   },
   'invalid xml attribute(<>&)': function() {
-  	var errors = [];
 	var p = new DOMParser({
-		errorHandler: function(key,msg){
-		console.log(key,msg)
-		errors.push(key, msg)
-	}
 	});
 	var dom = p.parseFromString('<img attr="<>&"/>', 'text/html');
-	//console.log(dom+'')
-	console.assert(errors.length,"invalid xml attribute(<)")
+	//console.log(dom+'##'+errors.length)
+	console.assert(dom=='<img attr="&lt;>&amp;"/>',"invalid xml attribute(<)")
   }
 }).run();

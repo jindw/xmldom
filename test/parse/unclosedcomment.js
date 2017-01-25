@@ -6,8 +6,9 @@ var DOMParser = require('xmldom').DOMParser;
 wows.describe('errorHandle').addBatch({
   'unclosedcomment': function() {
     var parser = new DOMParser();
-	assert.throws(function () {
+	assert['throws'](function () {
 		var doc = parser.parseFromString('<!--', 'text/xml');
+		console.log(doc+'')
 	}, 'Unclosed comment');
   }
 }).run();

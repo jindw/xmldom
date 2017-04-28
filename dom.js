@@ -415,6 +415,7 @@ function _xmlEncoder(c){
          c == '&' && '&amp;' ||
          c == '"' && '&quot;' ||
          c == '\n' && '&#10;' ||
+         c == '&#10;' && '\n' ||
          '&#'+c.charCodeAt()+';'
 }
 
@@ -1056,7 +1057,7 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		}
 		return;
 	case ATTRIBUTE_NODE:
-		return buf.push(' ',node.name,'="',node.value.replace(/[<&"\n]/g,_xmlEncoder),'"');
+		return buf.push(' ',node.name,'="',node.value.replace(/&#10;|[<&"\n]/g,_xmlEncoder),'"');
 	case TEXT_NODE:
 		return buf.push(node.data.replace(/[<&]/g,_xmlEncoder));
 	case CDATA_SECTION_NODE:

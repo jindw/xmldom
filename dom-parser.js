@@ -2,6 +2,7 @@ function DOMParser(options){
 	this.options = options ||{locator:{}};
 	
 }
+
 DOMParser.prototype.parseFromString = function(source,mimeType){
 	var options = this.options;
 	var sax =  new XMLReader();
@@ -10,7 +11,7 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	var locator = options.locator;
 	var defaultNSMap = options.xmlns||{};
 	var isHTML = /\/x?html?$/.test(mimeType);//mimeType.toLowerCase().indexOf('html') > -1;
-  	var entityMap = isHTML?require('./entities').entityMap:{'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"};
+  	var entityMap = isHTML?htmlEntity.entityMap:{'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"};
 	if(locator){
 		domBuilder.setDocumentLocator(locator)
 	}
@@ -243,8 +244,9 @@ function appendElement (hander,node) {
 }//appendChild and setAttributeNS are preformance key
 
 //if(typeof require == 'function'){
-	var XMLReader = require('./sax').XMLReader;
-	var DOMImplementation = exports.DOMImplementation = require('./dom').DOMImplementation;
-	exports.XMLSerializer = require('./dom').XMLSerializer ;
-	exports.DOMParser = DOMParser;
+var htmlEntity = require('./entities');
+var XMLReader = require('./sax').XMLReader;
+var DOMImplementation = exports.DOMImplementation = require('./dom').DOMImplementation;
+exports.XMLSerializer = require('./dom').XMLSerializer ;
+exports.DOMParser = DOMParser;
 //}

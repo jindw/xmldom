@@ -531,8 +531,23 @@ function parseDCC(source,start,domBuilder,errorHandler){//sure start with '<!'
 		var len = matchs.length;
 		if(len>1 && /!doctype/i.test(matchs[0][0])){
 			var name = matchs[1][0];
-			var pubid = len>3 && /^public$/i.test(matchs[2][0]) && matchs[3][0]
-			var sysid = len>4 && matchs[4][0];
+
+			var pubid = null;
+			var sysid = null;
+			for(var i = 0; i < len; i++) {
+				if(/^public$/i.test(matchs[i][0])) {
+					if(i+1 < len) {
+						i++;
+						pubid = matchs[i][0];
+					}
+				} else if(/^system$/i.test(matchs[i][0])) {
+					if(i+1 < len) {
+						i++;
+						sysid = matchs[i][0];
+					}
+				}
+			}
+
 			var lastMatch = matchs[len-1]
 			domBuilder.startDTD(name,pubid && pubid.replace(/^(['"])(.*?)\1$/,'$2'),
 					sysid && sysid.replace(/^(['"])(.*?)\1$/,'$2'));

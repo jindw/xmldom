@@ -16,10 +16,6 @@ function copy(src,dest){
  */
 function _extends(Class,Super){
 	var pt = Class.prototype;
-	if(Object.create){
-		var ppt = Object.create(Super.prototype)
-		pt.__proto__ = ppt;
-	}
 	if(!(pt instanceof Super)){
 		function t(){};
 		t.prototype = Super.prototype;

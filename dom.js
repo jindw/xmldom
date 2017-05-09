@@ -275,6 +275,8 @@ DOMImplementation.prototype = {
 		doc.implementation = this;
 		doc.childNodes = new NodeList();
 		doc.doctype = doctype;
+		doc.implementation = this;
+		doc.childNodes = new NodeList();
 		if(doctype){
 			doc.appendChild(doctype);
 		}

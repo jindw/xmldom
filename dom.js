@@ -1179,6 +1179,29 @@ function __set__(object,key,value){
 //do dynamic
 try{
 	if(Object.defineProperty){
+
+         	Object.defineProperty(Element.prototype, 'innerHTML', {
+            		get: function() {
+               			var res = [];
+               			for(var i = 0, l = this.childNodes.length; i < l; i++) {
+                  			res[i] = this.childNodes[i].toString();
+               			}
+               			return res.join('\n');
+            		},
+            		set: function(value) {
+							var parser = new (require('./dom-parser').DOMParser)();
+							var doc = parser.parseFromString("<div>" + value + "</div>", 'text/html');
+							var ownNode = this.ownerDocument.importNode(doc.documentElement, true);
+
+							while (this.firstChild){
+								this.removeChild(this.firstChild);
+							}
+							while (ownNode.firstChild){
+								this.appendChild(ownNode.firstChild);
+							}
+            		}
+         	});
+
 		Object.defineProperty(LiveNodeList.prototype,'length',{
 			get:function(){
 				_updateLiveList(this);

@@ -794,10 +794,106 @@ Element.prototype = {
 			return ls;
 			
 		});
-	}
+	},
+    find: function(elementName, ns, conditionCallback) {
+        var dummyResults = new FindResult([this]);
+        return dummyResults.find(elementName, ns, conditionCallback);
+    },
+    findOne: function(elementName, ns, conditionCallback) {
+        var dummyResult = new FindOneResult(this);
+        return dummyResult.findOne(elementName, ns, conditionCallback);
+    }
 };
 Document.prototype.getElementsByTagName = Element.prototype.getElementsByTagName;
 Document.prototype.getElementsByTagNameNS = Element.prototype.getElementsByTagNameNS;
+
+function currentIsMatch(current, elementName, ns, conditionCallback) {
+    var isMatch = current.localName == elementName;
+
+    if (ns && current.namespaceURI != ns) {
+        isMatch = false;
+    }
+
+    if (conditionCallback && !conditionCallback(current, x)) {
+        isMatch = false;
+    }
+
+    return isMatch;
+}
+
+function FindOneResult(result) {
+    this.result = result;
+};
+
+FindOneResult.prototype = {
+    findOne: function(elementName, ns, conditionCallback) {
+        var results = [];
+
+        if (this.result) {
+            for (var x = 0; x < this.result.childNodes.length; x++) {
+                var current = this.result.childNodes[x];
+
+                if (currentIsMatch(current, elementName, ns, conditionCallback)) {
+                    results.push(current);
+                }
+            }
+        }
+
+        return new FindOneResult(results.length == 1 ? results[0] : null);
+    },
+    find: function(elementName, ns, conditionCallback) {
+        var results = [];
+
+        if (this.result) {
+            for (var x = 0; x < this.result.childNodes.length; x++) {
+                var current = this.result.childNodes[x];
+
+                if (currentIsMatch(current, elementName, ns, conditionCallback)) {
+                    results.push(current);
+                }
+            }
+        }
+
+        return new FindResult(results);
+    }
+};
+
+function FindResult(results) {
+    this.results = results;
+};
+
+FindResult.prototype = {
+    find: function(elementName, ns, conditionCallback) {
+        var results = [];
+
+        for (var i = 0; i < this.results.length; i++) {
+            for (var x = 0; x < this.results[i].childNodes.length; x++ ) {
+                var current = this.results[i].childNodes[x];
+
+                if (currentIsMatch(current, elementName, ns, conditionCallback)) {
+                    results.push(current);
+                }
+            }
+        }
+
+        return new FindResult(results);
+    },
+    findOne: function(elementName, ns, conditionCallback) {
+        var results = [];
+
+        for (var i = 0; i < this.results.length; i++) {
+            for (var x = 0; x < this.results[i].childNodes.length; x++ ) {
+                var current = this.results[i].childNodes[x];
+
+                if (currentIsMatch(current, elementName, ns, conditionCallback)) {
+                    results.push(current);
+                }
+            }
+        }
+
+        return new FindResult(results.length == 1 ? results : []);
+    }
+};
 
 
 _extends(Element,Node);

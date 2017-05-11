@@ -17,7 +17,7 @@ function copy(src,dest){
 function _extends(Class,Super){
 	var pt = Class.prototype;
 	if(!(pt instanceof Super)){
-		function t(){};
+		var t = function(){};
 		t.prototype = Super.prototype;
 		t = new t();
 		copy(pt,t);
@@ -1208,8 +1208,8 @@ try{
 				}
 			}
 		})
-		
-		function getTextContent(node){
+
+		var getTextContent = function(node){
 			switch(node.nodeType){
 			case ELEMENT_NODE:
 			case DOCUMENT_FRAGMENT_NODE:

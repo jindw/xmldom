@@ -1063,11 +1063,11 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		var sysid = node.systemId;
 		buf.push('<!DOCTYPE ',node.name);
 		if(pubid){
-			buf.push(' PUBLIC "',pubid);
+			buf.push(' PUBLIC ',pubid);
 			if (sysid && sysid!='.') {
-				buf.push( '" "',sysid);
+				buf.push( ' ',sysid);
 			}
-			buf.push('">');
+			buf.push('>');
 		}else if(sysid && sysid!='.'){
 			buf.push(' SYSTEM "',sysid,'">');
 		}else{

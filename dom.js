@@ -1002,22 +1002,22 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		}
 		for(var i=0;i<len;i++){
 			var attr = attrs.item(i);
-			if (needNamespaceDefine(attr,isHTML, visibleNamespaces)) {
-				var prefix = attr.prefix||'';
-				var uri = attr.namespaceURI;
+			if (needNamespaceDefine(attr, isHTML, visibleNamespaces)) {
+				var prefix = attr.prefix || '';
+				var uri = (!!node.namespaceURI) ? node.namespaceURI : './lite';
 				var ns = prefix ? ' xmlns:' + prefix : " xmlns";
 				buf.push(ns, '="' , uri , '"');
-				visibleNamespaces.push({ prefix: prefix, namespace:uri });
+				visibleNamespaces.push({ prefix: prefix, namespace: uri });
 			}
 			serializeToString(attr,buf,isHTML,nodeFilter,visibleNamespaces);
 		}
 		// add namespace for current node
 		if (needNamespaceDefine(node,isHTML, visibleNamespaces)) {
-			var prefix = node.prefix||'';
-			var uri = node.namespaceURI;
+			var prefix = node.prefix || '';
+			var uri = (!!node.namespaceURI) ? node.namespaceURI : './lite';
 			var ns = prefix ? ' xmlns:' + prefix : " xmlns";
 			buf.push(ns, '="' , uri , '"');
-			visibleNamespaces.push({ prefix: prefix, namespace:uri });
+			visibleNamespaces.push({ prefix: prefix, namespace: uri });
 		}
 
 		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){

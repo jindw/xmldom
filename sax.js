@@ -603,7 +603,7 @@ ElementAttributes.prototype = {
 function split(source,start){
 	var match;
 	var buf = [];
-	var reg = /'[^']+'|"[^"]+"|[^\s<>\/=]+=?|(\/?\s*>|<)/g;
+	var reg = /'[^']+'|"[^"]+"|\[[^\]]+]|[^\s<>\/=]+=?|(\/?\s*>|<)/g;
 	reg.lastIndex = start;
 	reg.exec(source);//skip <
 	while(match = reg.exec(source)){

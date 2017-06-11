@@ -551,8 +551,9 @@ function parseInstruction(source,start,domBuilder){
 	if(end){
 		var match = source.substring(start,end).match(/^<\?(\S*)\s*([\s\S]*?)\s*$/);
 		if(match){
-			var len = match[0].length;
-			domBuilder.processingInstruction(match[1], match[2]) ;
+			if(match[1].toLowerCase() !== 'xml'){//ignore XML declarations
+				domBuilder.processingInstruction(match[1], match[2]) ;
+			}
 			return end+2;
 		}else{//error
 			return -1;

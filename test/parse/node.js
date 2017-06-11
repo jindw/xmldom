@@ -43,6 +43,12 @@ wows.describe('XML Node Parse').addBatch({
     	console.assert ( root.firstChild.nextSibling.nextSibling.nextSibling.nodeValue ==' comment ');
     	console.assert ( root.firstChild.nextSibling.nextSibling.nextSibling.nextSibling.nodeValue =='end');
     },
+    'processinginstruction': function(){
+    	var dom = new DOMParser().parseFromString('<xml><?some-pi  foo&>< \n ?></xml>');
+    	var pi = dom.documentElement.firstChild;
+    	console.assert ( pi.target =='some-pi');
+    	console.assert ( pi.nodeValue ==' foo&>< \n ');
+    },
     'append node': function () {
     	var dom = new DOMParser().parseFromString('<xml/>');
     	var child = dom.createElement("child");

@@ -43,6 +43,24 @@ wows.describe('XML Node Parse').addBatch({
     	console.assert ( root.firstChild.nextSibling.nextSibling.nextSibling.nodeValue ==' comment ');
     	console.assert ( root.firstChild.nextSibling.nextSibling.nextSibling.nextSibling.nodeValue =='end');
     },
+    'processinginstruction': function(){
+    	var dom = new DOMParser().parseFromString('<xml><?some-pi  foo&>< \n ?></xml>');
+    	var pi = dom.documentElement.firstChild;
+    	console.assert ( pi.target =='some-pi');
+    	console.assert ( pi.nodeValue =='foo&>< \n ');
+    },
+    'processinginstruction empty': function(){
+    	var dom = new DOMParser().parseFromString('<xml><?pi?></xml>');
+    	var pi = dom.documentElement.firstChild;
+    	console.assert ( pi.target == 'pi');
+    	console.assert ( pi.nodeValue == '');
+    },
+    'processinginstruction empty with trailing space': function(){
+    	var dom = new DOMParser().parseFromString('<xml><?pi ?></xml>');
+    	var pi = dom.documentElement.firstChild;
+    	console.assert ( pi.target == 'pi');
+    	console.assert ( pi.nodeValue == '');
+    },
     'append node': function () {
     	var dom = new DOMParser().parseFromString('<xml/>');
     	var child = dom.createElement("child");

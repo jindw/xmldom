@@ -47,7 +47,7 @@ wows.describe('XML Node Parse').addBatch({
     	var dom = new DOMParser().parseFromString('<xml><?some-pi  foo&>< \n ?></xml>');
     	var pi = dom.documentElement.firstChild;
     	console.assert ( pi.target =='some-pi');
-    	console.assert ( pi.nodeValue ==' foo&>< \n ');
+    	console.assert ( pi.nodeValue =='foo&>< \n ');
     },
     'processinginstruction empty': function(){
     	var dom = new DOMParser().parseFromString('<xml><?pi?></xml>');

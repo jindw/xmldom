@@ -28,5 +28,13 @@ wows.describe('XML Namespace Parse').addBatch({
        console.assert(root.firstChild.namespaceURI=='http://p.com')
        console.assert(root.lastChild.namespaceURI=='http://test.com')
        console.assert(root.firstChild.nextSibling.lookupNamespaceURI('p') == 'http://test.com')
+    },
+    'performing a lookup from a document node': function () {
+       var documentNode = new DOMParser().parseFromString('<xml xmlns="http://test.com"/>','text/xml');
+       console.assert(documentNode.lookupNamespaceURI('') == 'http://test.com')
+    },
+    'performing a lookup from an attribute node': function () {
+    var documentNode = new DOMParser().parseFromString('<xml xmlns="http://test.com" attr="1"/>','text/xml');
+		console.assert(documentNode.documentElement.getAttributeNode('attr').lookupNamespaceURI('') == 'http://test.com')
     }
 }).run(); // Run it

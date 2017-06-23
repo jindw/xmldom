@@ -368,6 +368,9 @@ Node.prototype = {
     },
     lookupPrefix:function(namespaceURI){
     	var el = this;
+    	if(el.nodeType == DOCUMENT_NODE){
+    		el = el.documentElement;
+    	}
     	while(el){
     		var map = el._nsMap;
     		//console.dir(map)
@@ -378,13 +381,16 @@ Node.prototype = {
     				}
     			}
     		}
-    		el = el.nodeType == ATTRIBUTE_NODE?el.ownerDocument : el.parentNode;
+    		el = el.nodeType == ATTRIBUTE_NODE?el.ownerElement : el.parentNode;
     	}
     	return null;
     },
     // Introduced in DOM Level 3:
     lookupNamespaceURI:function(prefix){
     	var el = this;
+    	if(el.nodeType == DOCUMENT_NODE){
+    		el = el.documentElement;
+    	}
     	while(el){
     		var map = el._nsMap;
     		//console.dir(map)
@@ -393,7 +399,7 @@ Node.prototype = {
     				return map[prefix] ;
     			}
     		}
-    		el = el.nodeType == ATTRIBUTE_NODE?el.ownerDocument : el.parentNode;
+    		el = el.nodeType == ATTRIBUTE_NODE?el.ownerElement : el.parentNode;
     	}
     	return null;
     },

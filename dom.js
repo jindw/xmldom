@@ -1040,7 +1040,7 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 			buf.push('/>');
 		}
 		// remove added visible namespaces
-		//visibleNamespaces.length = startVisibleNamespaces;
+		visibleNamespaces.length = startVisibleNamespaces;
 		return;
 	case DOCUMENT_NODE:
 	case DOCUMENT_FRAGMENT_NODE:

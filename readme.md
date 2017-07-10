@@ -11,7 +11,7 @@ Fork from [xmldom](https://github.com/jindw/xmldom)
 
 Install:
 -------
->npm install xmldom
+>npm install xmldom-evo
 
 Example:
 ====

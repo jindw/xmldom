@@ -4,9 +4,14 @@ A JavaScript implementation of W3C DOM for Node.js, Rhino and the browser. Fully
 compatible with `W3C DOM level2`; and some compatible with `level3`. Supports
 `DOMParser` and `XMLSerializer` interface such as in browser.
 
+About:
+-------
+Fork from [xmldom](https://github.com/jindw/xmldom)
+* fix for namespace propagation after dom manipulation
+
 Install:
 -------
->npm install xmldom
+>npm install xmldom-evo
 
 Example:
 ====

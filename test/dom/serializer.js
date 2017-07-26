@@ -36,5 +36,16 @@ wows.describe('XML Serializer').addBatch({
 		var expected = '<o xmlns="http://www.w3.org/1999/xhtml"><foo:child xmlns:foo="bar"></foo:child><foo:child xmlns:foo="bar"></foo:child></o>';
 
 		assert.equal(result, expected);
+	},
+	'non-string attribute values': function() {
+		var inputStr = '<o on=1 see=true yey="cool">33</o>';
+		var doc = new DOMParser().parseFromString(inputStr, 'text/html');
+
+		//namespace should be propagated to children
+		var result = new XMLSerializer().serializeToString(doc);
+
+		var expected = '<o on="1" see="true" yey="cool" xmlns="http://www.w3.org/1999/xhtml">33</o>';
+
+		assert.equal(result, expected);
 	}
 }).run();

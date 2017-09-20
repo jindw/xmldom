@@ -1,6 +1,9 @@
 function DOMParser(options){
 	this.options = options ||{locator:{}};
-	
+	var me = this;
+	this.parseFromString = function(){
+		return DOMParser.prototype.parseFromString.apply(me,arguments);
+	};
 }
 
 DOMParser.prototype.parseFromString = function(source,mimeType){

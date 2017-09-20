@@ -410,6 +410,8 @@ function _xmlEncoder(c){
          c == '>' && '&gt;' ||
          c == '&' && '&amp;' ||
          c == '"' && '&quot;' ||
+         c == '\n' && '&#10;' || // encode newline correctly
+         c == '&#10;' && '&#10;' || // already correctly encoded, leave it untouched
          '&#'+c.charCodeAt()+';'
 }
 
@@ -1051,7 +1053,8 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		}
 		return;
 	case ATTRIBUTE_NODE:
-		return buf.push(' ',node.name,'="',node.value.replace(/[<&"]/g,_xmlEncoder),'"');
+		// &#10; added before the other characters to avoid its & being replaced
+		return buf.push(' ',node.name,'="',node.value.replace(/&#10;|[<&"\n]/g,_xmlEncoder),'"');
 	case TEXT_NODE:
 		return buf.push(node.data.replace(/[<&]/g,_xmlEncoder));
 	case CDATA_SECTION_NODE:

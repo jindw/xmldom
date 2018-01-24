@@ -522,7 +522,7 @@ function _insertBefore(parentNode,newChild,nextChild){
 	if(pre){
 		pre.nextSibling = newFirst;
 	}else{
-		parentNode.firstChild = newFirst;
+		nextChild.parentNode.firstChild = newFirst;
 	}
 	if(nextChild == null){
 		parentNode.lastChild = newLast;

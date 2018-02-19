@@ -84,7 +84,7 @@ DOMHandler.prototype = {
 	},
 	startElement:function(namespaceURI, localName, qName, attrs) {
 		var doc = this.doc;
-	    var el = doc.createElementNS(namespaceURI, qName||localName);
+	    var el = doc.createElementNS(namespaceURI || null, qName||localName);
 	    var len = attrs.length;
 	    appendElement(this, el);
 	    this.currentElement = el;
@@ -94,7 +94,7 @@ DOMHandler.prototype = {
 	        var namespaceURI = attrs.getURI(i);
 	        var value = attrs.getValue(i);
 	        var qName = attrs.getQName(i);
-			var attr = doc.createAttributeNS(namespaceURI, qName);
+			var attr = doc.createAttributeNS(namespaceURI || null, qName);
 			this.locator &&position(attrs.getLocator(i),attr);
 			attr.value = attr.nodeValue = value;
 			el.setAttributeNode(attr)

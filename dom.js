@@ -1017,7 +1017,7 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 					var ns = prefix ? ' xmlns:' + prefix : " xmlns";
 					buf.push(ns, '="' , uri , '"');
 					visibleNamespaces.push({ prefix: prefix, namespace:uri });
-				}
+			}
 		}
 		
 		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){

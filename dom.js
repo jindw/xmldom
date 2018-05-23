@@ -1011,7 +1011,9 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		if (needNamespaceDefine(node,isHTML, visibleNamespaces)) {
 			var prefix = node.prefix||'';
 			var uri = node.namespaceURI;
-                if (uri) { // to avoid empty namespace value like xmlns:ds="" (X3-88886): A namespace URL cannot be empty => or we produce an invalid XML document 
+			if (uri) {
+					// Avoid empty namespace value like xmlns:ds=""
+					// Empty namespace URL will we produce an invalid XML document
 					var ns = prefix ? ' xmlns:' + prefix : " xmlns";
 					buf.push(ns, '="' , uri , '"');
 					visibleNamespaces.push({ prefix: prefix, namespace:uri });

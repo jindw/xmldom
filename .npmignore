@@ -1,5 +1,6 @@
 test
 t
-travis.yml
+.npmignore
+.travis.yml
 .project
 changelog

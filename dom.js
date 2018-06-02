@@ -1237,4 +1237,20 @@ try{
 //if(typeof require == 'function'){
 	exports.DOMImplementation = DOMImplementation;
 	exports.XMLSerializer = XMLSerializer;
+
+	exports.Attr = Attr;
+	exports.CharacterData = CharacterData;
+	exports.Comment = Comment;
+	exports.Document = Document;
+	exports.DocumentFragment = DocumentFragment;
+	exports.DOMException = DOMException;
+	exports.DOMImplementation = DOMImplementation;
+	exports.Element = Element;
+	exports.NamedNodeMap = NamedNodeMap;
+	exports.Node = Node;
+	exports.NodeList = NodeList;
+	exports.Text = Text;
+	
+	exports.ExceptionCode = ExceptionCode;
+	exports.LiveNodeList = LiveNodeList;
 //}

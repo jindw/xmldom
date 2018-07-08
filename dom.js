@@ -1015,8 +1015,9 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 			buf.push(ns, '="' , uri , '"');
 			visibleNamespaces.push({ prefix: prefix, namespace:uri });
 		}
-		
-		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
+
+    //see: https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-elements
+    if(child || isHTML && !/^(?:area|base|br|col|command|embed|hr|img|input|keygen|link|meta|param|source|track|wbr)$/i.test(nodeName)){
 			buf.push('>');
 			//if is cdata child node
 			if(isHTML && /^script$/i.test(nodeName)){

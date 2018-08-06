@@ -224,7 +224,9 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				s = S_EQ;
 			}else if(s === S_ATTR_SPACE){
 				s = S_EQ;
-			}else{
+			}else if(s === S_ATTR_NOQUOT_VALUE){
+        // still within attribute value.. continue reading
+      }else{
 				//fatalError: equal must after attrName or space after attrName
 				throw new Error('attribute equal must after attrName');
 			}

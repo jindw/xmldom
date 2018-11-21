@@ -193,7 +193,7 @@ function _toString(chars,start,length){
 		return chars.substr(start,length)
 	}else{//java sax connect width xmldom on rhino(what about: "? && !(chars instanceof String)")
 		if(chars.length >= start+length || start){
-			return new java.lang.String(chars,start,length)+'';
+			return chars.slice(start, length);
 		}
 		return chars;
 	}

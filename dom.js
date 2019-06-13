@@ -106,9 +106,9 @@ NodeList.prototype = {
 	item: function(index) {
 		return this[index] || null;
 	},
-	toString:function(isHTML,nodeFilter){
+	toString:function(isHTML,nodeFilter,entityConverter){
 		for(var buf = [], i = 0;i<this.length;i++){
-			serializeToString(this[i],buf,isHTML,nodeFilter);
+			serializeToString(this[i],buf,isHTML,nodeFilter,entityConverter);
 		}
 		return buf.join('');
 	}
@@ -404,13 +404,17 @@ Node.prototype = {
     }
 };
 
-
+/**
+ * https://stackoverflow.com/questions/514635/represent-space-and-tab-in-xml-tag
+ * https://stackoverflow.com/questions/24001878/do-i-need-to-replace-double-single-quote-in-xml-body-text
+ */
 function _xmlEncoder(c){
 	return c == '<' && '&lt;' ||
          c == '>' && '&gt;' ||
          c == '&' && '&amp;' ||
-         c == '"' && '&quot;' ||
-         '&#'+c.charCodeAt()+';'
+				 c == '"' && '&quot;' ||
+				 c == "'" && '&apos;' ||
+         '&#' + c.charCodeAt().toString().padStart(2, '0') + ';';
 }
 
 
@@ -906,16 +910,16 @@ function ProcessingInstruction() {
 ProcessingInstruction.prototype.nodeType = PROCESSING_INSTRUCTION_NODE;
 _extends(ProcessingInstruction,Node);
 function XMLSerializer(){}
-XMLSerializer.prototype.serializeToString = function(node,isHtml,nodeFilter){
-	return nodeSerializeToString.call(node,isHtml,nodeFilter);
+XMLSerializer.prototype.serializeToString = function(node,isHtml,nodeFilter,entityConverter){
+	return nodeSerializeToString.call(node,isHtml,nodeFilter, entityConverter);
 }
 Node.prototype.toString = nodeSerializeToString;
-function nodeSerializeToString(isHtml,nodeFilter){
+function nodeSerializeToString(isHtml,nodeFilter,entityConverter){
 	var buf = [];
 	var refNode = this.nodeType == 9 && this.documentElement || this;
 	var prefix = refNode.prefix;
 	var uri = refNode.namespaceURI;
-	
+
 	if(uri && prefix == null){
 		//console.log(prefix)
 		var prefix = refNode.lookupPrefix(uri);
@@ -927,7 +931,7 @@ function nodeSerializeToString(isHtml,nodeFilter){
 			]
 		}
 	}
-	serializeToString(this,buf,isHtml,nodeFilter,visibleNamespaces);
+	serializeToString(this,buf,isHtml,nodeFilter,visibleNamespaces,entityConverter);
 	//console.log('###',this.nodeType,uri,prefix,buf.join(''))
 	return buf.join('');
 }
@@ -960,7 +964,7 @@ function needNamespaceDefine(node,isHTML, visibleNamespaces) {
 	//console.error(3,true,node.flag,node.prefix,node.namespaceURI)
 	return true;
 }
-function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
+function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces,entityConverter){
 	if(nodeFilter){
 		node = nodeFilter(node);
 		if(node){
@@ -1005,7 +1009,7 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 				buf.push(ns, '="' , uri , '"');
 				visibleNamespaces.push({ prefix: prefix, namespace:uri });
 			}
-			serializeToString(attr,buf,isHTML,nodeFilter,visibleNamespaces);
+			serializeToString(attr,buf,isHTML,nodeFilter,visibleNamespaces,entityConverter);
 		}
 		// add namespace for current node		
 		if (needNamespaceDefine(node,isHTML, visibleNamespaces)) {
@@ -1024,14 +1028,14 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 					if(child.data){
 						buf.push(child.data);
 					}else{
-						serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);
+						serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces,entityConverter);
 					}
 					child = child.nextSibling;
 				}
 			}else
 			{
 				while(child){
-					serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);
+					serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces,entityConverter);
 					child = child.nextSibling;
 				}
 			}
@@ -1046,14 +1050,16 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 	case DOCUMENT_FRAGMENT_NODE:
 		var child = node.firstChild;
 		while(child){
-			serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);
+			serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces,entityConverter);
 			child = child.nextSibling;
 		}
 		return;
 	case ATTRIBUTE_NODE:
-		return buf.push(' ',node.name,'="',node.value.replace(/[<&"]/g,_xmlEncoder),'"');
+		var value = entityConverter ? entityConverter(ATTRIBUTE_NODE, node.value) : node.value.replace(/[<&"]/g,_xmlEncoder)
+		return buf.push(' ',node.name,'="',value,'"');
 	case TEXT_NODE:
-		return buf.push(node.data.replace(/[<&]/g,_xmlEncoder));
+		var data = entityConverter ? entityConverter(TEXT_NODE, node.data) : node.data.replace(/[<&]/g,_xmlEncoder)
+		return buf.push(data);
 	case CDATA_SECTION_NODE:
 		return buf.push( '<![CDATA[',node.data,']]>');
 	case COMMENT_NODE:

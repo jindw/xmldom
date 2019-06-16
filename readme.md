@@ -8,12 +8,12 @@ compatible with `W3C DOM level2`; and some compatible with `level3`. Supports
 
 Install:
 -------
->npm install xmldom
+>npm install xmldom-fork
 
 Example:
 ====
 ```javascript
-var DOMParser = require('xmldom').DOMParser;
+var DOMParser = require('xmldom-fork').DOMParser;
 var doc = new DOMParser().parseFromString(
     '<xml xmlns="a" xmlns:c="./lite">\n'+
         '\t<child>test</child>\n'+

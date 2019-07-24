@@ -19,7 +19,8 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
     'amp': '&',
     'quot': '"',
     'apos': "'",
-    'rsquo': '’'
+    'rsquo': '’',
+    'nbsp': ' '
   };
 
 	if(locator){

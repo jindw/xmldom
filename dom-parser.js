@@ -12,13 +12,14 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	var defaultNSMap = options.xmlns||{};
 	var isHTML = /\/x?html?$/.test(mimeType);//mimeType.toLowerCase().indexOf('html') > -1;
   var entityMap = isHTML?htmlEntity.entityMap: {
-    'lt':'<',
-    'le':'≤',
-    'gt':'>',
-    'ge':'≥',
-    'amp':'&',
-    'quot':'"',
-    'apos':"'"
+    'lt': '<',
+    'le': '≤',
+    'gt': '>',
+    'ge': '≥',
+    'amp': '&',
+    'quot': '"',
+    'apos': "'",
+    'rsquo': '’'
   };
 
 	if(locator){

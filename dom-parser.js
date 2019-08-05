@@ -20,7 +20,8 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
     'quot': '"',
     'apos': "'",
     'rsquo': '’',
-    'nbsp': ' '
+    'nbsp': ' ',
+    'mdash': '—'
   };
 
 	if(locator){

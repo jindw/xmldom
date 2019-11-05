@@ -310,6 +310,7 @@ function Node() {
 };
 
 Node.prototype = {
+	firstElementChild: null,
 	firstChild : null,
 	lastChild : null,
 	previousSibling : null,
@@ -494,6 +495,7 @@ function _removeChild(parentNode,child){
 		parentNode.lastChild = previous;
 	}
 	_onUpdateChild(parentNode.ownerDocument,parentNode);
+	_updateFirstElementChild(parentNode);
 	return child;
 }
 /**
@@ -537,6 +539,7 @@ function _insertBefore(parentNode,newChild,nextChild){
 	if (newChild.nodeType == DOCUMENT_FRAGMENT_NODE) {
 		newChild.firstChild = newChild.lastChild = null;
 	}
+	_updateFirstElementChild(parentNode);
 	return newChild;
 }
 function _appendSingleChild(parentNode,newChild){
@@ -557,8 +560,22 @@ function _appendSingleChild(parentNode,newChild){
 	}
 	parentNode.lastChild = newChild;
 	_onUpdateChild(parentNode.ownerDocument,parentNode,newChild);
+	_updateFirstElementChild(parentNode);
 	return newChild;
 	//console.log("__aa",parentNode.lastChild.nextSibling == null)
+}
+function _updateFirstElementChild(parentNode){
+	parentNode.firstElementChild = null;
+	if(parentNode.childNodes && parentNode.childNodes.length){
+		for(var i=0; i<parentNode.childNodes.length; i++){
+			if(parentNode.childNodes[i].nodeType == ELEMENT_NODE) {
+				if(parentNode.firstElementChild === null){
+					parentNode.firstElementChild = parentNode.childNodes[i];
+					break;
+				}
+			}
+		}
+	}
 }
 Document.prototype = {
 	//implementation : null,
